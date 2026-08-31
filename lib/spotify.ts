@@ -5,8 +5,8 @@ let cachedToken: { accessToken: string; expiresAt: number } | null = null
 
 /**
  * Client-credentials flow: gets an app-only access token (no user login).
- * Only works against endpoints that don't require user data, e.g. public
- * playlists, tracks, albums, artists.
+ * Only works against endpoints that don't require user data, e.g. looking
+ * up a track by id.
  */
 async function getAppAccessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now()) {
@@ -65,61 +65,24 @@ export async function spotifyFetch(path: string, init?: RequestInit) {
   return response
 }
 
-export type SpotifyPlaylist = {
+export type SpotifyTrack = {
   id: string
   name: string
-  description?: string | null
-  owner?: { id: string; display_name?: string }
-  tracks?: { total: number }
-  public?: boolean | null
-  images?: { url: string; height?: number | null; width?: number | null }[]
+  uri: string
+  artists?: { name: string }[]
 }
 
-export type SpotifyPlaylistTrackItem = {
-  added_at?: string
-  track: {
-    id: string
-    name: string
-    uri: string
-    duration_ms?: number
-    artists?: { name: string }[]
-    album?: {
-      name?: string
-      images?: { url: string; height?: number | null; width?: number | null }[]
-    }
-  } | null
-}
+/**
+ * Fetches tracks by ID, one request per track — Spotify removed the batch
+ * `GET /tracks?ids=` endpoint in its February 2026 API migration.
+ */
+export async function fetchTracksByIds(ids: string[]): Promise<SpotifyTrack[]> {
+  const tracks = await Promise.all(
+    ids.map(async (id) => {
+      const response = await spotifyFetch(`/tracks/${id}`)
+      return (await response.json()) as SpotifyTrack
+    })
+  )
 
-type SpotifyPaginatedPage<T> = {
-  items?: T[]
-  next?: string | null
-}
-
-function pathFromSpotifyNext(next: string): string {
-  const url = new URL(next)
-  return `${url.pathname.replace(/^\/v1/, "")}${url.search}`
-}
-
-/** Fetches metadata for a public playlist. */
-export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist> {
-  const response = await spotifyFetch(`/playlists/${playlistId}`)
-  return (await response.json()) as SpotifyPlaylist
-}
-
-/** Fetches every page of a public playlist's tracks (Spotify max 100 per request). */
-export async function fetchAllPlaylistItems(
-  playlistId: string,
-  limit = 100
-): Promise<SpotifyPlaylistTrackItem[]> {
-  const items: SpotifyPlaylistTrackItem[] = []
-  let path: string | null = `/playlists/${playlistId}/tracks?limit=${limit}`
-
-  while (path) {
-    const response = await spotifyFetch(path)
-    const data = (await response.json()) as SpotifyPaginatedPage<SpotifyPlaylistTrackItem>
-    items.push(...(data.items ?? []))
-    path = data.next ? pathFromSpotifyNext(data.next) : null
-  }
-
-  return items
+  return tracks
 }

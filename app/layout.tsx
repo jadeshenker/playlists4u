@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={dmMono.variable}>
-      <body className="flex min-h-screen flex-col overflow-x-hidden bg-purple-50 font-mono text-violet-700">
+      <body className="flex min-h-screen flex-col overflow-x-hidden text-[13px] font-sans">
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
       </body>

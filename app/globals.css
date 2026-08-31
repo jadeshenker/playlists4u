@@ -3,3 +3,36 @@
 @theme inline {
   --font-mono: var(--font-dm-mono), monospace;
 }
+
+@layer components {
+  .link {
+    @apply text-[blue] underline;
+  }
+
+  .tooltip {
+    position: relative;
+  }
+
+  .tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% - 2px);
+    left: 10px;
+    white-space: nowrap;
+    background: white;
+    color: black;
+    border: 1px solid #4b5563;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+    z-index: 50;
+  }
+
+  .tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+  }
+}
