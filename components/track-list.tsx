@@ -5,11 +5,13 @@ import { useTrackPlayer } from "@/components/track-player-provider"
 
 type Track = { id: string; name: string; artist: string }
 
-async function copyToClipboard(text: string) {
+async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
+    return true
   } catch (error) {
     console.error("copy failed:", error)
+    return false
   }
 }
 
@@ -52,7 +54,19 @@ function KeySequence({ active, keys }: { active: boolean; keys: string[] }) {
 export default function TrackList({ tracks }: { tracks: Track[] }) {
   const { matches, unplayableTrackIds, currentTrackId, isPlaying, playTrack } = useTrackPlayer()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const pendingRef = useRef(false)
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function showToast(message: string) {
+    setToast(message)
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 4000)
+  }
+
+  async function copyLink(url: string, label: string) {
+    if (await copyToClipboard(url)) showToast(label)
+  }
 
   // "c" arms a pending command; whichever of y/s comes next (within a beat)
   // fires it, scoped to whichever row is currently selected. Any other key
@@ -85,9 +99,9 @@ export default function TrackList({ tracks }: { tracks: Track[] }) {
       if (key === "y") {
         const match = matches[selectedId]
         const videoId = match && match !== "loading" && match !== "error" ? match.videoId : null
-        if (videoId) copyToClipboard(`https://www.youtube.com/watch?v=${videoId}`)
+        if (videoId) copyLink(`https://www.youtube.com/watch?v=${videoId}`, "copied youtube link")
       } else if (key === "s") {
-        copyToClipboard(`https://open.spotify.com/track/${selectedId}`)
+        copyLink(`https://open.spotify.com/track/${selectedId}`, "copied spotify link")
       }
     }
 
@@ -96,81 +110,94 @@ export default function TrackList({ tracks }: { tracks: Track[] }) {
       document.removeEventListener("keydown", handleKeyDown)
       disarm()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- copyLink only closes over stable setters/refs
   }, [selectedId, matches])
 
   return (
-    <ol className="list-none px-6 text-s">
-      {tracks.map((track, index) => {
-        const match = matches[track.id]
-        const isLoading = match === "loading" || match === undefined
-        const isUnplayable = match === "error" || unplayableTrackIds.has(track.id)
-        const videoId = match && match !== "loading" && match !== "error" ? match.videoId : null
-        const isSelected = selectedId === track.id
-        const showPause = currentTrackId === track.id && isPlaying
+    <>
+      <ol className="list-none px-6 text-s">
+        {tracks.map((track, index) => {
+          const match = matches[track.id]
+          const isLoading = match === "loading" || match === undefined
+          const isUnplayable = match === "error" || unplayableTrackIds.has(track.id)
+          const videoId = match && match !== "loading" && match !== "error" ? match.videoId : null
+          const isSelected = selectedId === track.id
+          const showPause = currentTrackId === track.id && isPlaying
 
-        const playDisabled = isLoading || isUnplayable
-        const playTooltip = isUnplayable ? "Playback currently unavailable" : undefined
+          const playDisabled = isLoading || isUnplayable
+          const playTooltip = isUnplayable ? "Playback currently unavailable" : undefined
 
-        return (
-          <li key={track.id}>
-            <div
-              onClick={() => setSelectedId(isSelected ? null : track.id)}
-              className="group flex flex-wrap items-center gap-x-2 gap-y-0.5 cursor-pointer"
-            >
-              <span>
-                {index + 1}. {track.name} <span>-</span> {track.artist}
-              </span>
-
-              <span
-                className={`flex items-center gap-x-3 font-mono text-[10px] transition-opacity ${
-                  isSelected
-                    ? "text-gray-500"
-                    : "pointer-events-none text-gray-400 opacity-0 group-hover:opacity-85"
-                }`}
+          return (
+            <li key={track.id}>
+              <div
+                onClick={() => setSelectedId(isSelected ? null : track.id)}
+                className="group flex flex-wrap items-center gap-x-2 gap-y-0.5 cursor-pointer"
               >
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    if (!playDisabled) playTrack(track.id)
-                  }}
-                  disabled={playDisabled}
-                  data-tooltip={playTooltip}
-                  className={`flex cursor-pointer items-center gap-1 disabled:cursor-not-allowed ${playTooltip ? "tooltip" : ""}`}
+                <span>
+                  {index + 1}. {track.name} <span>-</span> {track.artist}
+                </span>
+
+                <span
+                  className={`flex items-center gap-x-3 font-mono text-[10px] transition-opacity ${
+                    isSelected
+                      ? "text-gray-500"
+                      : "pointer-events-none text-gray-400 opacity-0 group-hover:opacity-85"
+                  }`}
                 >
-                  <span
-                    className={`${isSelected ? "text-gray-500" : ""} ${playDisabled ? "opacity-40" : ""}`}
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if (!playDisabled) playTrack(track.id)
+                    }}
+                    disabled={playDisabled}
+                    data-tooltip={playTooltip}
+                    className={`flex cursor-pointer items-center gap-1 disabled:cursor-default ${playTooltip ? "tooltip" : ""}`}
                   >
-                    {showPause ? "❚❚" : "▶"} play
-                  </span>
-                </button>
+                    <span
+                      className={`${isSelected ? "text-gray-500" : ""} ${playDisabled ? "opacity-40" : ""}`}
+                    >
+                      {showPause ? "❚❚" : "▶"} play
+                    </span>
+                  </button>
 
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    if (videoId) copyToClipboard(`https://www.youtube.com/watch?v=${videoId}`)
-                  }}
-                  disabled={!videoId}
-                  className="flex cursor-pointer items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <span className={isSelected ? "text-gray-500" : undefined}>⧉ cpy youtube link</span>
-                  <KeySequence active={isSelected} keys={["C", "Y"]} />
-                </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if (videoId)
+                        copyLink(
+                          `https://www.youtube.com/watch?v=${videoId}`,
+                          "copied youtube link"
+                        )
+                    }}
+                    disabled={!videoId}
+                    className="flex cursor-pointer items-center gap-1.5 disabled:cursor-default disabled:opacity-40"
+                  >
+                    <span className={isSelected ? "text-gray-500" : undefined}>
+                      ⧉ cpy youtube link
+                    </span>
+                    <KeySequence active={isSelected} keys={["C", "Y"]} />
+                  </button>
 
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    copyToClipboard(`https://open.spotify.com/track/${track.id}`)
-                  }}
-                  className="flex cursor-pointer items-center gap-1.5"
-                >
-                  <span className={isSelected ? "text-gray-500" : undefined}>⧉ cpy spotify link</span>
-                  <KeySequence active={isSelected} keys={["C", "S"]} />
-                </button>
-              </span>
-            </div>
-          </li>
-        )
-      })}
-    </ol>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      copyLink(`https://open.spotify.com/track/${track.id}`, "copied spotify link")
+                    }}
+                    className="flex cursor-pointer items-center gap-1.5"
+                  >
+                    <span className={isSelected ? "text-gray-500" : undefined}>
+                      ⧉ cpy spotify link
+                    </span>
+                    <KeySequence active={isSelected} keys={["C", "S"]} />
+                  </button>
+                </span>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+
+      <div className={`toast ${toast ? "toast-visible" : ""}`}>{toast}</div>
+    </>
   )
 }

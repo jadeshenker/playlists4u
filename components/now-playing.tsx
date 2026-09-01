@@ -45,6 +45,7 @@ export default function NowPlaying() {
   const {
     tracks,
     matches,
+    unplayableTrackIds,
     currentTrackId,
     isPlaying,
     position,
@@ -57,6 +58,9 @@ export default function NowPlaying() {
 
   const currentTrack = tracks.find((track) => track.id === currentTrackId) ?? null
   const match = currentTrackId ? matches[currentTrackId] : undefined
+  const isUnplayable = Boolean(
+    currentTrackId && (match === "error" || unplayableTrackIds.has(currentTrackId))
+  )
 
   const songName = !currentTrack
     ? "nothing playing"
@@ -100,8 +104,17 @@ export default function NowPlaying() {
             <button onClick={previous} className={controlButtonClass}>
               <SkipPreviousIcon />
             </button>
-            <button onClick={togglePlayPause} className={controlButtonClass}>
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            <button
+              onClick={() => {
+                if (!isUnplayable) togglePlayPause()
+              }}
+              disabled={isUnplayable}
+              data-tooltip={isUnplayable ? "Playback currently unavailable" : undefined}
+              className={`${controlButtonClass} disabled:cursor-default disabled:hover:bg-transparent ${isUnplayable ? "tooltip" : ""}`}
+            >
+              <span className={isUnplayable ? "opacity-40" : undefined}>
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </span>
             </button>
             <button onClick={next} className={controlButtonClass}>
               <SkipNextIcon />

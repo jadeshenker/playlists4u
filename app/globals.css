@@ -44,4 +44,28 @@
     top: auto;
     bottom: calc(100% - 2px);
   }
+
+  /* Same look as the tooltip box, just fixed to the corner. */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1rem;
+    background: white;
+    color: black;
+    border: 1px solid #4b5563;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+    padding: 6px 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 100;
+  }
+
+  .toast-visible {
+    opacity: 1;
+    visibility: visible;
+  }
 }
