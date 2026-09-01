@@ -5,7 +5,7 @@ export default function ContentGrid({ blocks }: { blocks: ArenaContentBlock[] })
   if (blocks.length === 0) return null
 
   return (
-    <div className="grid grid-cols-2 gap-2 px-6 pt-4 sm:grid-cols-3 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 px-6 pt-4 sm:grid-cols-3">
       {blocks.map((block) => (
         <div
           key={block.id}

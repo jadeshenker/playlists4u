@@ -79,6 +79,7 @@ export type ArenaPlaylistDetail = {
   title: string
   appSlug: string
   trackIds: string[]
+  trackImages: Record<string, string | null>
   tags: string[]
   description: string | null
   otherBlocks: ArenaContentBlock[]
@@ -247,6 +248,14 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     .map(extractSpotifyTrackId)
     .filter((id): id is string => id !== null)
 
+  // The Are.na image attached to each Spotify block is its album art —
+  // Are.na scrapes it straight from Spotify's oEmbed when the link is added.
+  const trackImages: Record<string, string | null> = {}
+  for (const block of contents) {
+    const trackId = extractSpotifyTrackId(block)
+    if (trackId) trackImages[trackId] = extractContentImageUrl(block)
+  }
+
   const otherBlocks = contents
     .filter((block) => extractSpotifyTrackId(block) === null)
     .map(toContentBlock)
@@ -258,6 +267,7 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     title: stripTag(match.title ?? match.slug),
     appSlug,
     trackIds,
+    trackImages,
     tags,
     description,
     otherBlocks,

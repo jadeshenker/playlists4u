@@ -14,6 +14,7 @@ export type PlayerTrack = {
   uri: string
   name: string
   artist: string
+  albumArt: string | null
 }
 
 type TrackPlayerContextValue = {

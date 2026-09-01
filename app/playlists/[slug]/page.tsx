@@ -4,7 +4,8 @@ import { fetchPlaylistBySlug } from "@/lib/arena"
 import { fetchTracksByIds } from "@/lib/spotify"
 import TrackPlayerProvider from "@/components/track-player-provider"
 import TrackList from "@/components/track-list"
-import UniversalPlayer from "@/components/universal-player"
+import NowPlaying from "@/components/now-playing"
+import AlbumGallery from "@/components/album-gallery"
 import TagChips from "@/components/tag-chips"
 import ContentGrid from "@/components/content-grid"
 
@@ -23,10 +24,11 @@ export default async function PlaylistPage({ params }: PageProps) {
     uri: track.uri,
     name: track.name,
     artist: (track.artists ?? []).map((artist) => artist.name).join(", "),
+    albumArt: playlist.trackImages[track.id] ?? null,
   }))
 
   return (
-    <main className="flex flex-1 flex-col pb-16">
+    <main className="flex flex-1 flex-col">
       <div className="py-2 border-b border-gray-600">
       <Link href="/" className="px-6 pb-2 block link">
         go home
@@ -41,12 +43,16 @@ export default async function PlaylistPage({ params }: PageProps) {
       )}
       </div>
       </div>
-      <p className="pb-2 font-semibold"></p>
-      <TrackPlayerProvider tracks={playerTracks}>
-        <TrackList tracks={playerTracks} />
-        <UniversalPlayer />
-      </TrackPlayerProvider>
-      <ContentGrid blocks={playlist.otherBlocks} />
+      {/* Wide enough that a track row (title, artist, and its full command
+          bar) fits on one line for most song names. */}
+      <div className="mx-auto w-full max-w-3xl">
+        <TrackPlayerProvider tracks={playerTracks}>
+          <NowPlaying />
+          <AlbumGallery />
+          <TrackList tracks={playerTracks} />
+        </TrackPlayerProvider>
+        <ContentGrid blocks={playlist.otherBlocks} />
+      </div>
     </main>
   )
 }
