@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
+  --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: var(--font-dm-mono), monospace;
 }
 
@@ -23,7 +24,7 @@
     color: black;
     border: 1px solid #4b5563;
     padding: 2px 6px;
-    font-size: 0.75rem;
+    font-size: 10px;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;

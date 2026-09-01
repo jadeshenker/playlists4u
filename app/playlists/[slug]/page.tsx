@@ -3,8 +3,7 @@ import { notFound } from "next/navigation"
 import { fetchPlaylistBySlug } from "@/lib/arena"
 import { fetchTracksByIds } from "@/lib/spotify"
 import TrackPlayerProvider from "@/components/track-player-provider"
-import PlayButton from "@/components/play-button"
-import TrackLinks from "@/components/track-links"
+import TrackList from "@/components/track-list"
 import UniversalPlayer from "@/components/universal-player"
 import TagChips from "@/components/tag-chips"
 import ContentGrid from "@/components/content-grid"
@@ -44,33 +43,7 @@ export default async function PlaylistPage({ params }: PageProps) {
       </div>
       <p className="pb-2 font-semibold"></p>
       <TrackPlayerProvider tracks={playerTracks}>
-        <table className="w-full table-fixed border-collapse">
-          <colgroup>
-            <col className="w-10" />
-            <col className="w-10" />
-            <col className="w-1/5" />
-            <col className="w-1/6" />
-            <col className="w-auto" />
-          </colgroup>
-          <tbody>
-            {tracks.map((track, index) => {
-              const artist = (track.artists ?? []).map((a) => a.name).join(", ")
-              return (
-                <tr key={track.id} className="border-b border-black">
-                  <td className="py-1 pl-6 pr-4 align-middle text-gray-400">{index + 1}</td>
-                  <td className="py-1 pr-4 align-middle">
-                    <PlayButton trackId={track.id} />
-                  </td>
-                  <td className="truncate py-1 pr-4 align-middle">{track.name}</td>
-                  <td className="truncate py-1 pr-4 align-middle">{artist}</td>
-                  <td className="py-1 pr-6 align-middle">
-                    <TrackLinks trackId={track.id} />
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <TrackList tracks={playerTracks} />
         <UniversalPlayer />
       </TrackPlayerProvider>
       <ContentGrid blocks={playlist.otherBlocks} />
