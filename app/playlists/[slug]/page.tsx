@@ -7,6 +7,7 @@ import PlayButton from "@/components/play-button"
 import TrackLinks from "@/components/track-links"
 import UniversalPlayer from "@/components/universal-player"
 import TagChips from "@/components/tag-chips"
+import ContentGrid from "@/components/content-grid"
 
 export const dynamic = "force-dynamic"
 
@@ -72,6 +73,7 @@ export default async function PlaylistPage({ params }: PageProps) {
         </table>
         <UniversalPlayer />
       </TrackPlayerProvider>
+      <ContentGrid blocks={playlist.otherBlocks} />
     </main>
   )
 }

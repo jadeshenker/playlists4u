@@ -44,18 +44,18 @@ export default async function Home() {
                   {playlist.thumbnails.map((thumbnail) => (
                     <div
                       key={thumbnail.id}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden border border-gray-200 bg-gray-50"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden border border-gray-200 bg-gray-50"
                     >
                       {thumbnail.imageUrl ? (
                         <Image
                           src={thumbnail.imageUrl}
                           alt={thumbnail.title ?? ""}
-                          width={40}
-                          height={40}
+                          width={28}
+                          height={28}
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="h-px w-5 bg-gray-300" />
+                        <div className="h-px w-4 bg-gray-300" />
                       )}
                     </div>
                   ))}

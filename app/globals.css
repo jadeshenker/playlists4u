@@ -35,4 +35,11 @@
     opacity: 1;
     visibility: visible;
   }
+
+  /* For tooltips near the bottom of the page — opening downward would extend
+     the page's scrollable area past the viewport, even while hidden. */
+  .tooltip-up::after {
+    top: auto;
+    bottom: calc(100% - 2px);
+  }
 }

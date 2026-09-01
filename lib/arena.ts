@@ -27,6 +27,8 @@ type ArenaImageUrls = {
   thumb?: { url: string }
   square?: { url: string }
   display?: { url: string }
+  large?: { url: string }
+  original?: { url: string }
 }
 
 type ArenaContentItem = {
@@ -39,6 +41,7 @@ type ArenaContentItem = {
   connected_at?: string
   image?: ArenaImageUrls | null
   source?: { url?: string | null } | null
+  content?: string | null
   metadata?: { description?: string | null } | null
 }
 
@@ -57,6 +60,11 @@ export type ArenaBlockThumbnail = {
   title: string | null
 }
 
+/** A non-Spotify block in a playlist's content grid: either an image, or text/a link. */
+export type ArenaContentBlock =
+  | { kind: "image"; id: number; title: string | null; imageUrl: string }
+  | { kind: "text"; id: number; title: string | null; text: string }
+
 export type ArenaPlaylistChannel = {
   slug: string
   appSlug: string
@@ -73,6 +81,7 @@ export type ArenaPlaylistDetail = {
   trackIds: string[]
   tags: string[]
   description: string | null
+  otherBlocks: ArenaContentBlock[]
 }
 
 /** Strips a "[P4U]" (any casing/spacing) tag out of a channel title. */
@@ -125,6 +134,34 @@ const SPOTIFY_TRACK_URL_RE = /open\.spotify\.com\/track\/([a-zA-Z0-9]+)/
 function extractSpotifyTrackId(block: ArenaContentItem): string | null {
   const match = block.source?.url?.match(SPOTIFY_TRACK_URL_RE)
   return match ? match[1] : null
+}
+
+/** Best-quality image URL available for a block, for rendering at its natural size. */
+function extractContentImageUrl(block: ArenaContentItem): string | null {
+  return (
+    block.image?.large?.url ??
+    block.image?.original?.url ??
+    block.image?.display?.url ??
+    block.image?.square?.url ??
+    block.image?.thumb?.url ??
+    null
+  )
+}
+
+/**
+ * Turns a non-Spotify block into a content-grid entry: an image block if it
+ * has one, otherwise its text (falling back to its source URL for link
+ * blocks with no body text). Blocks with neither are dropped.
+ */
+function toContentBlock(block: ArenaContentItem): ArenaContentBlock | null {
+  const title = block.generated_title ?? block.title ?? null
+  const imageUrl = extractContentImageUrl(block)
+  if (imageUrl) return { kind: "image", id: block.id, title, imageUrl }
+
+  const text = block.content?.trim() || block.source?.url?.trim() || null
+  if (text) return { kind: "text", id: block.id, title, text }
+
+  return null
 }
 
 async function fetchChannel(slug: string, per: number): Promise<ArenaChannelResponse> {
@@ -190,8 +227,8 @@ export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
 
 /**
  * Finds the sub-channel whose title slugifies to `appSlug` and returns the
- * Spotify track IDs for its Spotify blocks, in playlist order. Non-Spotify
- * blocks (images, text, etc.) are ignored for now.
+ * Spotify track IDs for its Spotify blocks (in playlist order), plus the
+ * non-Spotify blocks that have an image, for the content grid.
  */
 export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylistDetail | null> {
   const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
@@ -204,9 +241,16 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
   if (!match) return null
 
   const channel = await fetchChannel(match.slug, Math.max(match.length ?? 1, 1))
-  const trackIds = (channel.contents ?? [])
+  const contents = channel.contents ?? []
+
+  const trackIds = contents
     .map(extractSpotifyTrackId)
     .filter((id): id is string => id !== null)
+
+  const otherBlocks = contents
+    .filter((block) => extractSpotifyTrackId(block) === null)
+    .map(toContentBlock)
+    .filter((block): block is ArenaContentBlock => block !== null)
 
   const { tags, rest: description } = splitDescriptionTags(channel.metadata?.description)
 
@@ -216,5 +260,6 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     trackIds,
     tags,
     description,
+    otherBlocks,
   }
 }
