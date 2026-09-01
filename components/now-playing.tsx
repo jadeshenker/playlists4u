@@ -125,7 +125,7 @@ export default function NowPlaying() {
             <div className="h-full bg-black" style={{ width: `${progressPercent}%` }} />
           </div>
 
-          <div className="shrink-0 text-gray-400">
+          <div className="shrink-0 font-mono text-gray-400">
             {formatMs(position)} / {formatMs(duration)}
           </div>
         </div>

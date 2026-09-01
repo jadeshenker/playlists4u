@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { fetchPlaylistBySlug } from "@/lib/arena"
 import { fetchTracksByIds } from "@/lib/spotify"
@@ -8,6 +7,9 @@ import NowPlaying from "@/components/now-playing"
 import AlbumGallery from "@/components/album-gallery"
 import TagChips from "@/components/tag-chips"
 import ContentGrid from "@/components/content-grid"
+import ToastProvider from "@/components/toast-provider"
+import CopyTracklistShortcut from "@/components/copy-tracklist-shortcut"
+import GoHomeShortcut from "@/components/go-home-shortcut"
 
 export const dynamic = "force-dynamic"
 
@@ -28,31 +30,37 @@ export default async function PlaylistPage({ params }: PageProps) {
   }))
 
   return (
-    <main className="flex flex-1 flex-col">
-      <div className="py-2 border-b border-gray-600">
-      <Link href="/" className="px-6 pb-2 block link">
-        go home
-      </Link>
-      <div className="px-6">
-      <p>
-        <span className="font-semibold">title:</span> {playlist.title}
-      </p>
-      {playlist.description && <p className="pt-1">{playlist.description}</p>}
-      {playlist.tags.length > 0 && (
-          <div className="pt-1"><TagChips tags={playlist.tags} /></div>
-      )}
-      </div>
-      </div>
-      {/* Wide enough that a track row (title, artist, and its full command
-          bar) fits on one line for most song names. */}
-      <div className="mx-auto w-full max-w-3xl">
-        <TrackPlayerProvider tracks={playerTracks}>
-          <NowPlaying />
-          <AlbumGallery />
-          <TrackList tracks={playerTracks} />
-        </TrackPlayerProvider>
-        <ContentGrid blocks={playlist.otherBlocks} />
-      </div>
-    </main>
+    <ToastProvider>
+      <main className="flex flex-1 flex-col">
+        <div className="flex items-end justify-between border-b border-gray-600 py-2">
+          <div className="px-6">
+            <p>
+              <span className="font-semibold">title:</span> {playlist.title}
+            </p>
+            {playlist.description && <p className="pt-1">{playlist.description}</p>}
+            {playlist.tags.length > 0 && (
+              <div className="pt-1">
+                <TagChips tags={playlist.tags} />
+              </div>
+            )}
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1 px-6">
+            <GoHomeShortcut />
+            <CopyTracklistShortcut tracks={playerTracks} />
+          </div>
+        </div>
+        {/* Wide enough that a track row (title, artist, and its full command
+            bar) fits on one line for most song names. */}
+        <div className="mx-auto w-full max-w-3xl">
+          <TrackPlayerProvider tracks={playerTracks}>
+            <NowPlaying />
+            <AlbumGallery />
+            <TrackList tracks={playerTracks} />
+          </TrackPlayerProvider>
+          <p className="p-6 text-center">────── ⋆⋅☆⋅⋆ ──────</p>
+          <ContentGrid blocks={playlist.otherBlocks} />
+        </div>
+      </main>
+    </ToastProvider>
   )
 }
