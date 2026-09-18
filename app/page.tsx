@@ -17,7 +17,7 @@ export default async function Home() {
       </p>
       <p className="px-6">
         powered by{" "}
-        <a href="https://www.are.na/jade-s-d2yaygzp528/p4u-playlists4u/table" className="link">
+        <a href="https://www.are.na/jade-s-d2yaygzp528/playlists4u/table" className="link">
           are.na
         </a>
       </p>
@@ -44,7 +44,7 @@ export default async function Home() {
                   {playlist.thumbnails.map((thumbnail) => (
                     <div
                       key={thumbnail.id}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden border border-gray-200 bg-gray-50"
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden ${thumbnail.imageUrl ? "" : "border border-gray-200 bg-gray-50"}`}
                     >
                       {thumbnail.imageUrl ? (
                         <Image

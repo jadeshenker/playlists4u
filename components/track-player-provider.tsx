@@ -229,8 +229,9 @@ export default function TrackPlayerProvider({
           // restrictions enforced only at play time) — this is the only way
           // to detect that. Codes: 2 invalid param, 5 HTML5 error, 100 not
           // found, 101/150 embedding disallowed by the owner.
-          onError: () => {
+          onError: (event) => {
             const trackId = currentTrackIdRef.current
+            console.error(`youtube playback error (code ${event.data}) for track`, trackId)
             if (!trackId) return
             setUnplayableTrackIds((prev) => new Set(prev).add(trackId))
             setIsPlaying(false)

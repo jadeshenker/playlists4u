@@ -1,7 +1,7 @@
 const ARENA_API_BASE = "https://api.are.na/v2"
 
 /** The "channel of channels" — each sub-channel is one playlist. */
-export const PLAYLISTS_CHANNEL_SLUG = "p4u-playlists4u"
+export const PLAYLISTS_CHANNEL_SLUG = "playlists4u"
 
 export async function arenaFetch(path: string, init?: RequestInit) {
   const accessToken = process.env.ARENA_ACCESS_TOKEN
@@ -85,11 +85,6 @@ export type ArenaPlaylistDetail = {
   otherBlocks: ArenaContentBlock[]
 }
 
-/** Strips a "[P4U]" (any casing/spacing) tag out of a channel title. */
-function stripTag(title: string): string {
-  return title.replace(/\[p4u\]\s*/gi, "").trim()
-}
-
 const TAGS_MARKER_RE = /tagsURit:\s*/i
 
 /**
@@ -165,9 +160,33 @@ function toContentBlock(block: ArenaContentItem): ArenaContentBlock | null {
   return null
 }
 
+/** Sorts blocks by the datetime they were added to the channel, most recent first. */
+function sortByConnectedAtDesc<T extends { connected_at?: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aTime = a.connected_at ? new Date(a.connected_at).getTime() : 0
+    const bTime = b.connected_at ? new Date(b.connected_at).getTime() : 0
+    return bTime - aTime
+  })
+}
+
+/**
+ * Fetches a channel's metadata and its contents as two separate calls.
+ * `GET /channels/:slug` embeds a `contents` field, but that embed is served
+ * from a cache that can lag well behind reality (newly-connected blocks can
+ * be missing from it for days); `GET /channels/:slug/contents` isn't, so
+ * that's the one we trust for the actual block list.
+ */
 async function fetchChannel(slug: string, per: number): Promise<ArenaChannelResponse> {
-  const response = await arenaFetch(`/channels/${slug}?per=${per}`)
-  return (await response.json()) as ArenaChannelResponse
+  const [channelResponse, contentsResponse] = await Promise.all([
+    arenaFetch(`/channels/${slug}`),
+    arenaFetch(`/channels/${slug}/contents?per=${per}`),
+  ])
+  const channel = (await channelResponse.json()) as ArenaChannelResponse
+  const { contents } = (await contentsResponse.json()) as { contents?: ArenaContentItem[] }
+  return {
+    ...channel,
+    contents: sortByConnectedAtDesc(contents ?? []),
+  }
 }
 
 /** Fetches a channel (and its first page of blocks) by slug. */
@@ -176,32 +195,29 @@ export async function fetchArenaChannel(slug: string): Promise<ArenaChannelRespo
 }
 
 /**
- * A sub-channel's thumbnails (most-recently-added first — Are.na returns
- * contents oldest-first; the UI clips this list to whatever fits the
- * column's width, so recent thumbnails are favored over older ones) and
- * tags. Fetched from the sub-channel directly rather than trusted from the
- * parent list's embedded copy, whose `metadata.description` is sometimes
- * truncated (missing the "tagsURit:" prefix).
+ * A sub-channel's thumbnails (most-recently-added first — the UI clips this
+ * list to whatever fits the column's width, so recent thumbnails are
+ * favored over older ones) and tags. Fetched from the sub-channel directly
+ * rather than trusted from the parent list's embedded copy, whose
+ * `metadata.description` is sometimes truncated (missing the "tagsURit:"
+ * prefix).
  */
 async function fetchChannelExtras(
-  slug: string,
-  length: number
+  slug: string
 ): Promise<{ thumbnails: ArenaBlockThumbnail[]; tags: string[] }> {
-  const channel = await fetchChannel(slug, Math.max(length, 1))
+  const channel = await fetchChannel(slug, 100)
   const contents = channel.contents ?? []
 
-  const thumbnails = contents
-    .map((block) => ({
-      id: block.id,
-      imageUrl: block.image?.square?.url ?? block.image?.thumb?.url ?? null,
-      title: block.generated_title ?? block.title ?? null,
-    }))
-    .reverse()
+  const thumbnails = contents.map((block) => ({
+    id: block.id,
+    imageUrl: block.image?.square?.url ?? block.image?.thumb?.url ?? null,
+    title: block.generated_title ?? block.title ?? null,
+  }))
 
   return { thumbnails, tags: splitDescriptionTags(channel.metadata?.description).tags }
 }
 
-/** Every playlist (sub-channel) inside the p4u-playlists4u channel, with its thumbnails. */
+/** Every playlist (sub-channel) inside the playlists4u channel, with its thumbnails. */
 export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
   const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
   const subChannels = (parent.contents ?? []).filter(
@@ -211,8 +227,8 @@ export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
 
   return Promise.all(
     subChannels.map(async (channel) => {
-      const title = stripTag(channel.title ?? channel.slug)
-      const { thumbnails, tags } = await fetchChannelExtras(channel.slug, channel.length ?? 0)
+      const title = channel.title ?? channel.slug
+      const { thumbnails, tags } = await fetchChannelExtras(channel.slug)
       return {
         slug: channel.slug,
         appSlug: titleToSlug(title),
@@ -228,8 +244,8 @@ export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
 
 /**
  * Finds the sub-channel whose title slugifies to `appSlug` and returns the
- * Spotify track IDs for its Spotify blocks (in playlist order), plus the
- * non-Spotify blocks that have an image, for the content grid.
+ * Spotify track IDs for its Spotify blocks (most-recently-added first),
+ * plus the non-Spotify blocks that have an image, for the content grid.
  */
 export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylistDetail | null> {
   const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
@@ -237,11 +253,11 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     (item): item is ArenaContentItem & { slug: string } =>
       item.class === "Channel" &&
       typeof item.slug === "string" &&
-      titleToSlug(stripTag(item.title ?? item.slug)) === appSlug
+      titleToSlug(item.title ?? item.slug) === appSlug
   )
   if (!match) return null
 
-  const channel = await fetchChannel(match.slug, Math.max(match.length ?? 1, 1))
+  const channel = await fetchChannel(match.slug, 100)
   const contents = channel.contents ?? []
 
   const trackIds = contents
@@ -264,7 +280,7 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
   const { tags, rest: description } = splitDescriptionTags(channel.metadata?.description)
 
   return {
-    title: stripTag(match.title ?? match.slug),
+    title: match.title ?? match.slug,
     appSlug,
     trackIds,
     trackImages,
