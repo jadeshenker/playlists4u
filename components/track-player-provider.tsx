@@ -133,6 +133,9 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
   // Tracks whose youtube match has already been requested (or resolved) —
   // keeps revisiting a playlist from re-hitting the match API.
   const requestedMatchIdsRef = useRef<Set<string>>(new Set())
+  // The player's onStateChange callback is wired up once at creation, so it
+  // needs a ref (not the `step` closure) to always call the latest version.
+  const stepRef = useRef<(direction: 1 | -1) => void>(() => {})
 
   const [tracksById, setTracksById] = useState<Record<string, PlayerTrack>>({})
   const [activeTrackIds, setActiveTrackIds] = useState<string[]>([])
@@ -254,7 +257,11 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
           // optimistic setIsPlaying(true) in playTrack and flickers the icon.
           onStateChange: (event) => {
             if (event.data === YT_STATE_PLAYING) setIsPlaying(true)
-            else if (event.data === YT_STATE_PAUSED || event.data === YT_STATE_ENDED) setIsPlaying(false)
+            else if (event.data === YT_STATE_PAUSED) setIsPlaying(false)
+            else if (event.data === YT_STATE_ENDED) {
+              setIsPlaying(false)
+              stepRef.current(1)
+            }
           },
           // Some official/label videos report embeddable:true via the Data
           // API but still refuse to actually play in an embed (per-domain
@@ -342,6 +349,10 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
       }
     }
   }
+
+  useEffect(() => {
+    stepRef.current = step
+  })
 
   function seekToFraction(fraction: number) {
     if (duration <= 0) return

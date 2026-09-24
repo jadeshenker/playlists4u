@@ -42,11 +42,7 @@ export default function MiniPlayer() {
   )
   const videoId = match && match !== "loading" && match !== "error" ? match.videoId : null
 
-  const songTitle = !currentTrack
-    ? ""
-    : match && match !== "loading" && match !== "error"
-      ? match.title
-      : `${currentTrack.name} — ${currentTrack.artist}`
+  const songTitle = !currentTrack ? "" : `${currentTrack.name} — ${currentTrack.artist}`
 
   const progressPercent = duration > 0 ? (position / duration) * 100 : 0
 
