@@ -85,10 +85,10 @@ export type ArenaPlaylistDetail = {
   otherBlocks: ArenaContentBlock[]
 }
 
-const TAGS_MARKER_RE = /tagsURit:\s*/i
+const TAGS_MARKER_RE = /tags:\s*/i
 
 /**
- * Channel descriptions often include a "tagsURit:" marker followed by a
+ * Channel descriptions often include a "tags:" marker followed by a
  * comma-separated list of tags, possibly alongside other free-text notes.
  * Splits the tags out from whatever description text remains.
  */
@@ -150,7 +150,10 @@ function extractContentImageUrl(block: ArenaContentItem): string | null {
  * blocks with no body text). Blocks with neither are dropped.
  */
 function toContentBlock(block: ArenaContentItem): ArenaContentBlock | null {
-  const title = block.generated_title ?? block.title ?? null
+  // Are.na falls back to the literal string "Untitled" for blocks with no
+  // real title — treat that the same as no title at all.
+  const rawTitle = block.generated_title ?? block.title ?? null
+  const title = rawTitle && rawTitle.trim().toLowerCase() !== "untitled" ? rawTitle : null
   const imageUrl = extractContentImageUrl(block)
   if (imageUrl) return { kind: "image", id: block.id, title, imageUrl }
 
@@ -199,7 +202,7 @@ export async function fetchArenaChannel(slug: string): Promise<ArenaChannelRespo
  * list to whatever fits the column's width, so recent thumbnails are
  * favored over older ones) and tags. Fetched from the sub-channel directly
  * rather than trusted from the parent list's embedded copy, whose
- * `metadata.description` is sometimes truncated (missing the "tagsURit:"
+ * `metadata.description` is sometimes truncated (missing the "tags:"
  * prefix).
  */
 async function fetchChannelExtras(

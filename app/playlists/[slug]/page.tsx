@@ -5,7 +5,6 @@ import TrackPlayerProvider from "@/components/track-player-provider"
 import TrackList from "@/components/track-list"
 import NowPlaying from "@/components/now-playing"
 import AlbumGallery from "@/components/album-gallery"
-import TagChips from "@/components/tag-chips"
 import ContentGrid from "@/components/content-grid"
 import ToastProvider from "@/components/toast-provider"
 import CopyTracklistShortcut from "@/components/copy-tracklist-shortcut"
@@ -32,17 +31,17 @@ export default async function PlaylistPage({ params }: PageProps) {
   return (
     <ToastProvider>
       <main className="flex flex-1 flex-col">
-        <div className="flex items-end justify-between border-b border-gray-600 py-2">
+        <div className="flex items-center justify-between border-b border-gray-600 py-2">
           <div className="px-6">
-            <p>
-              <span className="font-semibold">title:</span> {playlist.title}
+            <p className="text-sm">
+              playlists 4u / <span className="font-semibold">{playlist.title}</span>
             </p>
-            {playlist.description && <p className="pt-1">{playlist.description}</p>}
-            {playlist.tags.length > 0 && (
-              <div className="pt-1">
-                <TagChips tags={playlist.tags} />
-              </div>
-            )}
+            <div className="grid grid-cols-[5rem_1fr] gap-y-0.5 pt-3 text-xs">
+              <span className="text-gray-500">tags</span>
+              <span>{playlist.tags.length > 0 ? playlist.tags.join(" / ") : "--"}</span>
+              <span className="text-gray-500">description</span>
+              <span>{playlist.description || "--"}</span>
+            </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 px-6">
             <GoHomeShortcut />

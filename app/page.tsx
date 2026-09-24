@@ -12,7 +12,7 @@ export default async function Home() {
   return (
     <main className="flex flex-1 flex-col">
       <div className="py-2 border-b border-gray-600">
-      <p className="px-6 font-semibold">
+      <p className="px-6 font-semibold text-sm">
         playlists 4u
       </p>
       <p className="px-6">
