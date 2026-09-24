@@ -75,6 +75,11 @@ export type ArenaPlaylistChannel = {
   tags: string[]
 }
 
+export type ArenaPlaylistNeighbor = {
+  appSlug: string
+  title: string
+}
+
 export type ArenaPlaylistDetail = {
   title: string
   appSlug: string
@@ -83,6 +88,8 @@ export type ArenaPlaylistDetail = {
   tags: string[]
   description: string | null
   otherBlocks: ArenaContentBlock[]
+  prevPlaylist: ArenaPlaylistNeighbor | null
+  nextPlaylist: ArenaPlaylistNeighbor | null
 }
 
 const TAGS_MARKER_RE = /tags:\s*/i
@@ -220,13 +227,24 @@ async function fetchChannelExtras(
   return { thumbnails, tags: splitDescriptionTags(channel.metadata?.description).tags }
 }
 
-/** Every playlist (sub-channel) inside the playlists4u channel, with its thumbnails. */
-export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
-  const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
-  const subChannels = (parent.contents ?? []).filter(
+/**
+ * The sub-channels (playlists) inside a fetched playlists4u channel, in the
+ * order they're displayed on the homepage — this same order drives prev/next
+ * navigation on a playlist's page.
+ */
+function getPlaylistSubChannels(
+  parent: ArenaChannelResponse
+): (ArenaContentItem & { slug: string })[] {
+  return (parent.contents ?? []).filter(
     (item): item is ArenaContentItem & { slug: string } =>
       item.class === "Channel" && typeof item.slug === "string"
   )
+}
+
+/** Every playlist (sub-channel) inside the playlists4u channel, with its thumbnails. */
+export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
+  const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
+  const subChannels = getPlaylistSubChannels(parent)
 
   return Promise.all(
     subChannels.map(async (channel) => {
@@ -252,13 +270,20 @@ export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
  */
 export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylistDetail | null> {
   const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
-  const match = (parent.contents ?? []).find(
-    (item): item is ArenaContentItem & { slug: string } =>
-      item.class === "Channel" &&
-      typeof item.slug === "string" &&
-      titleToSlug(item.title ?? item.slug) === appSlug
+  const subChannels = getPlaylistSubChannels(parent)
+  const matchIndex = subChannels.findIndex(
+    (item) => titleToSlug(item.title ?? item.slug) === appSlug
   )
-  if (!match) return null
+  if (matchIndex === -1) return null
+  const match = subChannels[matchIndex]
+
+  const toNeighbor = (item: ArenaContentItem & { slug: string }): ArenaPlaylistNeighbor => ({
+    appSlug: titleToSlug(item.title ?? item.slug),
+    title: item.title ?? item.slug,
+  })
+  const prevPlaylist = matchIndex > 0 ? toNeighbor(subChannels[matchIndex - 1]) : null
+  const nextPlaylist =
+    matchIndex < subChannels.length - 1 ? toNeighbor(subChannels[matchIndex + 1]) : null
 
   const channel = await fetchChannel(match.slug, 100)
   const contents = channel.contents ?? []
@@ -290,5 +315,7 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     tags,
     description,
     otherBlocks,
+    prevPlaylist,
+    nextPlaylist,
   }
 }

@@ -7,6 +7,7 @@ import TrackList from "@/components/track-list"
 import AlbumGallery from "@/components/album-gallery"
 import ContentGrid from "@/components/content-grid"
 import GoHomeShortcut from "@/components/go-home-shortcut"
+import PlaylistNav from "@/components/playlist-nav"
 
 export const dynamic = "force-dynamic"
 
@@ -44,8 +45,9 @@ export default async function PlaylistPage({ params }: PageProps) {
             <span>{playlist.description || "--"}</span>
           </div>
         </div>
-        <div className="flex shrink-0 items-end px-6">
+        <div className="flex shrink-0 flex-col items-end gap-2 px-6">
           <GoHomeShortcut />
+          <PlaylistNav prev={playlist.prevPlaylist} next={playlist.nextPlaylist} />
         </div>
       </div>
       {/* Wide enough that a track row (title, artist, and its full command
