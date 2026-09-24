@@ -3,8 +3,8 @@
 import Image from "next/image"
 import { useTrackPlayer, type PlayerTrack } from "@/components/track-player-provider"
 
-const ACTIVE_SIZE = 88
-const MIN_SIZE = 40
+const ACTIVE_SIZE = 132
+const MIN_SIZE = 56
 
 function Cover({
   track,
@@ -18,7 +18,7 @@ function Cover({
   onPlay: () => void
 }) {
   const isActive = distance === 0
-  const size = isActive ? ACTIVE_SIZE : Math.max(ACTIVE_SIZE - 10 - distance * 10, MIN_SIZE)
+  const size = isActive ? ACTIVE_SIZE : Math.max(ACTIVE_SIZE - 14 - distance * 14, MIN_SIZE)
   const opacity = isUnplayable
     ? Math.min(isActive ? 1 : Math.max(0.9 - distance * 0.18, 0.4), 0.5)
     : isActive
@@ -31,9 +31,9 @@ function Cover({
         if (!isUnplayable) onPlay()
       }}
       disabled={isUnplayable}
-      className={`shrink-0 overflow-hidden border bg-gray-50 transition-all duration-200 ${
+      className={`shrink-0 overflow-hidden bg-gray-50 transition-all duration-200 ${
         isUnplayable ? "cursor-not-allowed" : "cursor-pointer"
-      } ${isActive ? "border-gray-400" : "border-gray-200"}`}
+      }`}
       style={{ width: size, height: size, opacity }}
     >
       {track.albumArt ? (
@@ -82,8 +82,8 @@ export default function AlbumGallery() {
   }
 
   return (
-    <div className="flex w-full items-end gap-2 px-6 pb-8">
-      <div className="flex flex-1 items-end justify-end gap-2 overflow-hidden">
+    <div className="flex w-full items-end gap-3 px-6 pt-10 pb-10">
+      <div className="flex flex-1 items-end justify-end gap-3 overflow-hidden">
         {before.map((track, i) => (
           <Cover
             key={track.id}
@@ -102,7 +102,7 @@ export default function AlbumGallery() {
         onPlay={() => playTrack(active.id)}
       />
 
-      <div className="flex flex-1 items-end justify-start gap-2 overflow-hidden">
+      <div className="flex flex-1 items-end justify-start gap-3 overflow-hidden">
         {after.map((track, i) => (
           <Cover
             key={track.id}

@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { isTypingTarget } from "@/lib/dom"
 
 export type YoutubeMatch = { videoId: string; title: string } | null
 
@@ -18,7 +19,13 @@ export type PlayerTrack = {
 }
 
 type TrackPlayerContextValue = {
+  // The currently displayed playlist's tracks, in order — used for coverflow
+  // and for stepping to the next/previous track.
   tracks: PlayerTrack[]
+  // The actually-playing (or last-played) track, looked up across every
+  // playlist the player has ever seen — stays populated even after
+  // navigating away from the playlist it came from.
+  currentTrack: PlayerTrack | null
   matches: Record<string, MatchState | undefined>
   // Tracks whose embed actually failed at play time (e.g. the owner blocks
   // embedded playback on this domain) — distinct from `matches`, since the
@@ -29,6 +36,10 @@ type TrackPlayerContextValue = {
   isPlaying: boolean
   position: number
   duration: number
+  // Called by whichever playlist page is currently mounted, so the shared
+  // player knows what "next"/"previous" should step through and can start
+  // resolving youtube matches for any tracks it hasn't seen yet.
+  registerTracks: (tracks: PlayerTrack[]) => void
   playTrack: (trackId: string) => void
   togglePlayPause: () => void
   next: () => void
@@ -109,19 +120,22 @@ const HIDDEN_STYLE = {
   height: 113,
 }
 
-export default function TrackPlayerProvider({
-  tracks,
-  children,
-}: {
-  tracks: PlayerTrack[]
-  children: React.ReactNode
-}) {
+// Mounted once in the root layout so playback (and the hidden YouTube
+// embed) survives client-side navigation between the home page and any
+// playlist — only the *displayed* tracks change as pages mount/unmount via
+// registerTracks; the player itself never remounts.
+export default function TrackPlayerProvider({ children }: { children: React.ReactNode }) {
   const youtubeElRef = useRef<HTMLDivElement>(null)
   const youtubePlayerRef = useRef<YoutubePlayerInstance | null>(null)
   const youtubePlayerPromiseRef = useRef<Promise<YoutubePlayerInstance | null> | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const currentTrackIdRef = useRef<string | null>(null)
+  // Tracks whose youtube match has already been requested (or resolved) —
+  // keeps revisiting a playlist from re-hitting the match API.
+  const requestedMatchIdsRef = useRef<Set<string>>(new Set())
 
+  const [tracksById, setTracksById] = useState<Record<string, PlayerTrack>>({})
+  const [activeTrackIds, setActiveTrackIds] = useState<string[]>([])
   const [matches, setMatches] = useState<Record<string, MatchState | undefined>>({})
   const [unplayableTrackIds, setUnplayableTrackIds] = useState<Set<string>>(new Set())
   const [currentTrackId, setCurrentTrackIdState] = useState<string | null>(null)
@@ -136,12 +150,31 @@ export default function TrackPlayerProvider({
     setCurrentTrackIdState(trackId)
   }
 
-  // Resolve youtube matches for every track once, up front — needed so
-  // next/previous can skip to a track that actually has one.
-  useEffect(() => {
-    setMatches(Object.fromEntries(tracks.map((track) => [track.id, "loading" as const])))
+  function registerTracks(newTracks: PlayerTrack[]) {
+    setTracksById((prev) => {
+      let changed = false
+      const next = { ...prev }
+      for (const track of newTracks) {
+        if (!next[track.id]) {
+          next[track.id] = track
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+    setActiveTrackIds(newTracks.map((track) => track.id))
 
-    tracks.forEach((track) => {
+    const toFetch = newTracks.filter((track) => !requestedMatchIdsRef.current.has(track.id))
+    if (toFetch.length === 0) return
+    toFetch.forEach((track) => requestedMatchIdsRef.current.add(track.id))
+
+    setMatches((prev) => {
+      const next = { ...prev }
+      for (const track of toFetch) next[track.id] = "loading"
+      return next
+    })
+
+    toFetch.forEach((track) => {
       const params = new URLSearchParams({ trackId: track.id, name: track.name, artist: track.artist })
       fetch(`/api/youtube/match?${params.toString()}`)
         .then(async (response) => {
@@ -163,8 +196,7 @@ export default function TrackPlayerProvider({
           setMatches((prev) => ({ ...prev, [track.id]: match }))
         })
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }
 
   // Pre-create the hidden player on mount instead of waiting for the first
   // play click — script-load + player construction is async, and letting
@@ -242,6 +274,30 @@ export default function TrackPlayerProvider({
     })
   }
 
+  // Spacebar play/pause, global (works from any page, not just while a
+  // track row or the mini player has focus).
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space") return
+      if (isTypingTarget(event.target)) return
+      event.preventDefault()
+      if (!currentTrackId) return
+      const match = matches[currentTrackId]
+      if (match === "error" || unplayableTrackIds.has(currentTrackId)) return
+
+      if (isPlaying) {
+        youtubePlayerRef.current?.pauseVideo()
+        setIsPlaying(false)
+      } else {
+        youtubePlayerRef.current?.playVideo()
+        setIsPlaying(true)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [currentTrackId, isPlaying, matches, unplayableTrackIds])
+
   function togglePlayPause() {
     if (!currentTrackId) return
     if (isPlaying) {
@@ -270,17 +326,18 @@ export default function TrackPlayerProvider({
     setIsPlaying(true)
   }
 
-  // Steps to the next/previous track with a resolved match, skipping ahead
-  // past any tracks with no match (yet, or ever).
+  // Steps to the next/previous track (within the currently displayed
+  // playlist) with a resolved match, skipping ahead past any tracks with no
+  // match (yet, or ever).
   function step(direction: 1 | -1) {
     if (!currentTrackId) return
-    const index = tracks.findIndex((t) => t.id === currentTrackId)
+    const index = activeTrackIds.indexOf(currentTrackId)
     if (index === -1) return
 
-    for (let offset = 1; offset <= tracks.length; offset++) {
-      const candidate = tracks[(index + direction * offset + tracks.length) % tracks.length]
-      if (isPlayableMatch(matches[candidate.id]) && !unplayableTrackIds.has(candidate.id)) {
-        playTrack(candidate.id)
+    for (let offset = 1; offset <= activeTrackIds.length; offset++) {
+      const candidateId = activeTrackIds[(index + direction * offset + activeTrackIds.length) % activeTrackIds.length]
+      if (isPlayableMatch(matches[candidateId]) && !unplayableTrackIds.has(candidateId)) {
+        playTrack(candidateId)
         return
       }
     }
@@ -292,16 +349,25 @@ export default function TrackPlayerProvider({
     setPosition(fraction * duration)
   }
 
+  const tracks = activeTrackIds.reduce<PlayerTrack[]>((list, id) => {
+    const track = tracksById[id]
+    if (track) list.push(track)
+    return list
+  }, [])
+  const currentTrack = currentTrackId ? (tracksById[currentTrackId] ?? null) : null
+
   return (
     <TrackPlayerContext.Provider
       value={{
         tracks,
+        currentTrack,
         matches,
         unplayableTrackIds,
         currentTrackId,
         isPlaying,
         position,
         duration,
+        registerTracks,
         playTrack,
         togglePlayPause,
         next: () => step(1),

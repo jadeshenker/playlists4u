@@ -48,7 +48,7 @@
   /* Same look as the tooltip box, just fixed to the corner. */
   .toast {
     position: fixed;
-    bottom: 1.5rem;
+    bottom: 5rem;
     right: 1rem;
     background: white;
     color: black;

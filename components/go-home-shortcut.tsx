@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import KeySequence from "@/components/key-sequence"
 import { isTypingTarget } from "@/lib/dom"
 
-/** Header-level "C then H" shortcut that goes back to the playlist index —
+/** Header-level "G then H" shortcut that goes back to the playlist index —
  * clickable too, not just a keyboard hint. Standing/always live. */
 export default function GoHomeShortcut() {
   const router = useRouter()
@@ -26,7 +26,7 @@ export default function GoHomeShortcut() {
       if (isTypingTarget(event.target)) return
       const key = event.key.toLowerCase()
 
-      if (key === "c") {
+      if (key === "g") {
         pendingRef.current = true
         if (timeout) clearTimeout(timeout)
         timeout = setTimeout(disarm, 1500)
@@ -50,7 +50,7 @@ export default function GoHomeShortcut() {
       onClick={() => router.push("/")}
       className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500"
     >
-      <KeySequence active keys={["C", "H"]} />
+      <KeySequence active keys={["G", "H"]} />
       <span>go home</span>
     </button>
   )
