@@ -12,7 +12,9 @@ import { PlayIcon, PauseIcon, SkipPreviousIcon, SkipNextIcon } from "@/component
 
 // Keep in sync with the spacer height below the fixed bar — the bar's own
 // height must exactly match it, or page content gets clipped/overlapped.
-const BAR_HEIGHT = "h-16"
+// Taller on mobile to fit the stacked 3-row layout; also kept in sync with
+// the ".block-viewer" bottom offset in globals.css.
+const BAR_HEIGHT = "h-32 md:h-16"
 
 /** Fixed bar pinned to the bottom of the viewport, mounted once in the root
  * layout so it (and playback) survives navigation between the home page and
@@ -117,25 +119,81 @@ export default function MiniPlayer() {
       <div className={`${BAR_HEIGHT} shrink-0`} aria-hidden />
 
       <div className={`mini-player-bar fixed bottom-0 left-0 right-0 z-50 ${BAR_HEIGHT} border-t border-gray-300 bg-white`}>
-        <div className="mx-auto flex h-full max-w-3xl items-center gap-4 px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden bg-gray-50">
-              {currentTrack.albumArt ? (
-                <Image
-                  src={currentTrack.albumArt}
-                  alt={currentTrack.name}
-                  width={44}
-                  height={44}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-px w-4 bg-gray-300" />
+        <div className="mx-auto flex h-full w-full max-w-3xl flex-col justify-center gap-2 px-6 py-4 md:flex-row md:items-center md:gap-4 md:py-0">
+          {/* Mobile row 1: title + commands. At md+, this wrapper vanishes
+              (display: contents) and its two children rejoin the single row
+              in their original desktop order via md:order-*. */}
+          <div className="flex items-center justify-between gap-3 md:contents">
+            <div className="flex min-w-0 flex-1 items-center gap-3 md:order-1">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden bg-gray-50">
+                {currentTrack.albumArt ? (
+                  <Image
+                    src={currentTrack.albumArt}
+                    alt={currentTrack.name}
+                    width={44}
+                    height={44}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-px w-4 bg-gray-300" />
+                )}
+              </div>
+              <div className="min-w-0 truncate">{songTitle}</div>
+            </div>
+
+            <div ref={menuRef} className="relative hidden shrink-0 md:order-4 md:block">
+              <button
+                onClick={() => setMenuOpen((open) => !open)}
+                className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500"
+              >
+                <KeySequence active keys={["C"]} />
+                <span>for commands</span>
+              </button>
+
+              {menuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-44 border border-gray-300 bg-white py-1 shadow-md">
+                  <button
+                    onClick={() => {
+                      if (videoId) copyLink(`https://www.youtube.com/watch?v=${videoId}`, "copied youtube link")
+                    }}
+                    disabled={!videoId}
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                  >
+                    <span>⧉ cpy youtube link</span>
+                    <KeySequence active keys={["Y"]} />
+                  </button>
+                  <button
+                    onClick={() => copyLink(`https://open.spotify.com/track/${currentTrack.id}`, "copied spotify link")}
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50"
+                  >
+                    <span>⧉ cpy spotify link</span>
+                    <KeySequence active keys={["S"]} />
+                  </button>
+                  <button
+                    onClick={copyTrackList}
+                    disabled={tracks.length === 0}
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                  >
+                    <span>⧉ cpy track list</span>
+                    <KeySequence active keys={["L"]} />
+                  </button>
+                </div>
               )}
             </div>
-            <div className="min-w-0 truncate">{songTitle}</div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          {/* Mobile row 2: progress + timestamps. */}
+          <div className="flex min-w-0 items-center gap-3 md:order-3 md:flex-1">
+            <div onClick={handleSeek} className="h-3 flex-1 cursor-pointer bg-gray-200">
+              <div className="h-full bg-black" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <div className="shrink-0 font-mono text-[10px] text-gray-400">
+              {formatMs(position)} / {formatMs(duration)}
+            </div>
+          </div>
+
+          {/* Mobile row 3: playback controls, centered. */}
+          <div className="flex items-center justify-center gap-1.5 md:order-2 md:shrink-0 md:justify-start">
             <button onClick={previous} className={controlButtonClass}>
               <SkipPreviousIcon />
             </button>
@@ -154,55 +212,6 @@ export default function MiniPlayer() {
             <button onClick={next} className={controlButtonClass}>
               <SkipNextIcon />
             </button>
-          </div>
-
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div onClick={handleSeek} className="h-3 flex-1 cursor-pointer bg-gray-200">
-              <div className="h-full bg-black" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <div className="shrink-0 font-mono text-[10px] text-gray-400">
-              {formatMs(position)} / {formatMs(duration)}
-            </div>
-          </div>
-
-          <div ref={menuRef} className="relative shrink-0">
-            <button
-              onClick={() => setMenuOpen((open) => !open)}
-              className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500"
-            >
-              <KeySequence active keys={["C"]} />
-              <span>for commands</span>
-            </button>
-
-            {menuOpen && (
-              <div className="absolute bottom-full right-0 mb-2 w-44 border border-gray-300 bg-white py-1 shadow-md">
-                <button
-                  onClick={() => {
-                    if (videoId) copyLink(`https://www.youtube.com/watch?v=${videoId}`, "copied youtube link")
-                  }}
-                  disabled={!videoId}
-                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
-                >
-                  <span>⧉ cpy youtube link</span>
-                  <KeySequence active keys={["Y"]} />
-                </button>
-                <button
-                  onClick={() => copyLink(`https://open.spotify.com/track/${currentTrack.id}`, "copied spotify link")}
-                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50"
-                >
-                  <span>⧉ cpy spotify link</span>
-                  <KeySequence active keys={["S"]} />
-                </button>
-                <button
-                  onClick={copyTrackList}
-                  disabled={tracks.length === 0}
-                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
-                >
-                  <span>⧉ cpy track list</span>
-                  <KeySequence active keys={["L"]} />
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

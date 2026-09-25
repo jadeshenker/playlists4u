@@ -34,9 +34,9 @@ export default async function PlaylistPage({ params }: PageProps) {
 
   return (
     <BlockViewerProvider>
-      <main className="flex flex-1 flex-col lg:flex-row pb-6">
+      <main className="flex flex-1 flex-col md:flex-row pb-6">
         <RegisterTracks tracks={playerTracks} />
-        <div className="playlist-sidebar flex items-center justify-between border-b border-gray-600 py-2 lg:fixed lg:top-0 lg:left-0 lg:z-10 lg:w-80 lg:flex-col lg:items-stretch lg:justify-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:border-gray-300 lg:bg-white lg:py-6">
+        <div className="playlist-sidebar flex items-center justify-between border-b border-gray-600 py-2 md:fixed md:top-0 md:left-0 md:z-10 md:w-86 md:flex-col md:items-stretch md:justify-start md:overflow-y-auto md:border-b-0 md:border-r md:border-gray-300 md:bg-white md:py-6">
           <div className="px-6">
             <p className="text-sm">
               <Link href="/" className="link">
@@ -64,15 +64,15 @@ export default async function PlaylistPage({ params }: PageProps) {
               <span>{playlist.description || "--"}</span>
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2 px-6 lg:items-start lg:mt-auto">
+          <div className="flex shrink-0 flex-col items-end gap-2 px-6 md:items-start md:mt-auto">
             <BlockViewer />
-            <div className="flex flex-col items-end gap-2 lg:items-start lg:pt-2">
+            <div className="flex flex-col items-end gap-2 md:items-start md:pt-2">
               <GoHomeShortcut />
               <PlaylistNav prev={playlist.prevPlaylist} next={playlist.nextPlaylist} />
             </div>
           </div>
         </div>
-        <div className="min-w-0 flex-1 lg:ml-80">
+        <div className="min-w-0 flex-1 md:ml-86">
           {/* Wide enough that a track row (title, artist, and its full command
               bar) fits on one line for most song names. */}
           <div className="mx-auto w-full max-w-3xl">

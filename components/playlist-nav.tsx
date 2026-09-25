@@ -19,7 +19,7 @@ export default function PlaylistNav({
     <div className="flex items-center gap-3 font-mono text-[10px] text-gray-500">
       {prev && (
         <div
-        className="tooltip tooltip-slim max-lg:tooltip-left"
+        className="tooltip tooltip-slim max-md:tooltip-left"
         data-tooltip="previous playlist"
       >
         <Link
@@ -33,7 +33,7 @@ export default function PlaylistNav({
       )}
       {next && (
          <div
-         className="tooltip tooltip-slim max-lg:tooltip-left"
+         className="tooltip tooltip-slim max-md:tooltip-left"
          data-tooltip="next playlist"
        >
         <Link

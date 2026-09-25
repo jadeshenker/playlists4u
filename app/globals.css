@@ -92,4 +92,15 @@
   body:has(.mini-player-bar) .playlist-sidebar {
     bottom: 4rem;
   }
+
+  /* The mobile block viewer bar, fixed to the bottom of the screen. Bottom
+     is overridden below when the mini-player bar is mounted, so it never
+     sits behind it. */
+  .block-viewer {
+    bottom: 0;
+  }
+
+  body:has(.mini-player-bar) .block-viewer {
+    bottom: 8rem;
+  }
 }

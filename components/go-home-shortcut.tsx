@@ -48,7 +48,7 @@ export default function GoHomeShortcut() {
   return (
     <button
       onClick={() => router.push("/")}
-      className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500"
+      className="hidden cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500 md:flex"
     >
       <KeySequence active keys={["G", "H"]} />
       <span>go home</span>
