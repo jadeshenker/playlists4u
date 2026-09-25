@@ -36,7 +36,7 @@ export default async function PlaylistPage({ params }: PageProps) {
     <BlockViewerProvider>
       <main className="flex flex-1 flex-col lg:flex-row pb-6">
         <RegisterTracks tracks={playerTracks} />
-        <div className="playlist-sidebar flex items-center justify-between border-b border-gray-600 py-2 lg:fixed lg:top-0 lg:left-0 lg:z-10 lg:w-80 lg:flex-col lg:items-stretch lg:justify-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:bg-white lg:py-6">
+        <div className="playlist-sidebar flex items-center justify-between border-b border-gray-600 py-2 lg:fixed lg:top-0 lg:left-0 lg:z-10 lg:w-80 lg:flex-col lg:items-stretch lg:justify-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:border-gray-300 lg:bg-white lg:py-6">
           <div className="px-6">
             <p className="text-sm">
               <Link href="/" className="link">

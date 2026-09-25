@@ -15,14 +15,14 @@ export default function BlockViewer() {
     <div className="hidden w-full flex-col-reverse lg:flex">
       <button
         onClick={toggleCollapsed}
-        className="flex w-full cursor-pointer items-center justify-between border border-black px-3 py-1.5 text-xs"
+        className="flex w-full cursor-pointer items-center justify-between border border-gray-300 px-3 py-1.5 text-xs"
       >
         <span>block viewer</span>
         <span>{collapsed ? "+" : "−"}</span>
       </button>
 
       <div
-        className={`overflow-hidden border border-b-0 border-black transition-[max-height,opacity] duration-300 ease-out ${expanded ? "max-h-[28rem] opacity-100" : "max-h-0 opacity-0"}`}
+        className={`overflow-hidden border border-b-0 border-gray-300 transition-[max-height,opacity] duration-300 ease-out ${expanded ? "max-h-[28rem] opacity-100" : "max-h-0 opacity-0"}`}
       >
         {selectedBlock && (
           <div className="flex flex-col gap-2 p-3 text-xs">
