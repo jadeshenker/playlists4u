@@ -114,8 +114,6 @@ export default function MiniPlayer() {
 
   return (
     <>
-      {/* Reserves space in normal flow so the fixed bar never overlaps page
-          content or the footer. */}
       <div className={`${BAR_HEIGHT} shrink-0`} aria-hidden />
 
       <div className={`mini-player-bar fixed bottom-0 left-0 right-0 z-50 ${BAR_HEIGHT} border-t border-gray-300 bg-white`}>

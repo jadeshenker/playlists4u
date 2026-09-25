@@ -92,12 +92,4 @@
   body:has(.mini-player-bar) .playlist-sidebar {
     bottom: 4rem;
   }
-
-  /* Recenters the shared footer within the content column (to the right of
-     the playlist page's fixed sidebar) instead of the full viewport width. */
-  @media (min-width: 1024px) {
-    body:has(.playlist-sidebar) footer {
-      padding-left: 16rem;
-    }
-  }
 }

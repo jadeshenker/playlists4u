@@ -24,21 +24,19 @@ export default function TrackList({ tracks }: { tracks: Track[] }) {
         const tooltip = isUnplayable ? "Playback currently unavailable" : undefined
 
         return (
-          <li key={track.id}>
+          <li className="pb-1" key={track.id}>
             <button
               onClick={() => {
                 if (!disabled) playTrack(track.id)
               }}
               disabled={disabled}
               data-tooltip={tooltip}
-              className={`flex w-full cursor-pointer items-center gap-2 text-left disabled:cursor-default ${tooltip ? "tooltip" : ""}`}
+              className={`flex w-full cursor-pointer items-center gap-2 text-left disabled:cursor-default ${tooltip ? "tooltip" : ""} ${isCurrent ? "text-purple-600" : ""}`}
             >
+              <span className="text-gray-400 pr-6">{showPause ? <PauseIcon /> : <PlayIcon />}</span>
               <span className={disabled ? "opacity-40" : undefined}>
                 {index + 1}. {track.name} <span>-</span> {track.artist}
               </span>
-              {isCurrent && (
-                <span className="text-gray-400">{showPause ? <PauseIcon /> : <PlayIcon />}</span>
-              )}
             </button>
           </li>
         )

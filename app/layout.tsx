@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { DM_Mono } from "next/font/google"
-import Footer from "@/components/footer"
 import ToastProvider from "@/components/toast-provider"
 import TrackPlayerProvider from "@/components/track-player-provider"
 import MiniPlayer from "@/components/mini-player"
@@ -28,7 +27,6 @@ export default function RootLayout({
         <TrackPlayerProvider>
           <ToastProvider>
             <div className="flex flex-1 flex-col">{children}</div>
-            <Footer />
             <MiniPlayer />
           </ToastProvider>
         </TrackPlayerProvider>

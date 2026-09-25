@@ -15,3 +15,11 @@ export function formatMs(ms: number): string {
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, "0")}`
 }
+
+/** A playlist's total runtime, e.g. "34 min" or "1 hr 12 min". */
+export function formatDuration(ms: number): string {
+  const totalMinutes = Math.round(ms / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`
+}

@@ -3,7 +3,7 @@
  * a pill, but a faint one when `active` is false — used to fade a per-row
  * hint in on hover, while a standing hint (like the header's) stays lit.
  */
-function KeyBadge({ active, children }: { active: boolean; children: React.ReactNode }) {
+export function KeyBadge({ active, children }: { active: boolean; children: React.ReactNode }) {
   return (
     <span
       className={`rounded px-1 py-px leading-none ${active ? "bg-gray-200 text-gray-400" : "bg-gray-100"}`}

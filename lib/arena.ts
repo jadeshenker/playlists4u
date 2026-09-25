@@ -76,8 +76,8 @@ export type ArenaCreator = {
 
 /** A non-Spotify block in a playlist's content grid: either an image, or text/a link. */
 export type ArenaContentBlock =
-  | { kind: "image"; id: number; title: string | null; imageUrl: string }
-  | { kind: "text"; id: number; title: string | null; text: string }
+  | { kind: "image"; id: number; title: string | null; imageUrl: string; description: string | null; addedAt: string | null }
+  | { kind: "text"; id: number; title: string | null; text: string; description: string | null; addedAt: string | null }
 
 export type ArenaPlaylistChannel = {
   slug: string
@@ -185,11 +185,13 @@ function toContentBlock(block: ArenaContentItem): ArenaContentBlock | null {
   // real title — treat that the same as no title at all.
   const rawTitle = block.generated_title ?? block.title ?? null
   const title = rawTitle && rawTitle.trim().toLowerCase() !== "untitled" ? rawTitle : null
+  const description = block.metadata?.description?.trim() || null
+  const addedAt = block.connected_at ?? null
   const imageUrl = extractContentImageUrl(block)
-  if (imageUrl) return { kind: "image", id: block.id, title, imageUrl }
+  if (imageUrl) return { kind: "image", id: block.id, title, imageUrl, description, addedAt }
 
   const text = block.content?.trim() || block.source?.url?.trim() || null
-  if (text) return { kind: "text", id: block.id, title, text }
+  if (text) return { kind: "text", id: block.id, title, text, description, addedAt }
 
   return null
 }

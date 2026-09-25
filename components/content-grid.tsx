@@ -1,13 +1,23 @@
-import type { ArenaContentBlock } from "@/lib/arena"
+"use client"
 
-/** A grid of uniform squares, are.na-style — images are cropped to fill, text is clipped to fit. */
+import type { ArenaContentBlock } from "@/lib/arena"
+import { useBlockViewer } from "@/components/block-viewer-provider"
+
+/** A grid of uniform squares, are.na-style — images are cropped to fill, text is clipped to fit.
+ * Clicking a block loads it into the sidebar's block viewer. */
 export default function ContentGrid({ blocks }: { blocks: ArenaContentBlock[] }) {
+  const { selectBlock } = useBlockViewer()
+
   if (blocks.length === 0) return null
 
   return (
-    <div className="grid grid-cols-2 gap-x-2 gap-y-4 px-6 pt-4 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-x-2 gap-y-4 px-6 pt-10 sm:grid-cols-3">
       {blocks.map((block) => (
-        <div key={block.id} className="flex flex-col gap-1">
+        <button
+          key={block.id}
+          onClick={() => selectBlock(block)}
+          className="flex cursor-pointer flex-col gap-1 text-left"
+        >
           <div
             className={`flex aspect-square items-center justify-center overflow-hidden ${block.kind === "text" ? "border border-gray-200" : ""}`}
           >
@@ -25,7 +35,7 @@ export default function ContentGrid({ blocks }: { blocks: ArenaContentBlock[] })
             )}
           </div>
           <p className="truncate text-center text-xs text-gray-500">{block.title || "--"}</p>
-        </div>
+        </button>
       ))}
     </div>
   )
