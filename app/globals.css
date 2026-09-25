@@ -45,6 +45,20 @@
     bottom: calc(100% - 2px);
   }
 
+  /* For tooltips near the right edge of the page — opening rightward would
+     run the box past the viewport edge. */
+  .tooltip-left::after {
+    left: auto;
+    right: 10px;
+  }
+
+  /* Same look as the .toast corner notification, for tooltips that should
+     stand out more than the default .tooltip's compact style. */
+  .tooltip-slim::after {
+    font-size: 11px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+  }
+
   /* Same look as the tooltip box, just fixed to the corner. */
   .toast {
     position: fixed;
@@ -67,5 +81,23 @@
   .toast-visible {
     opacity: 1;
     visibility: visible;
+  }
+
+  /* The playlist page's fixed sidebar. Bottom is overridden below when the
+     mini-player bar is mounted, so its own content never sits behind it. */
+  .playlist-sidebar {
+    bottom: 0;
+  }
+
+  body:has(.mini-player-bar) .playlist-sidebar {
+    bottom: 4rem;
+  }
+
+  /* Recenters the shared footer within the content column (to the right of
+     the playlist page's fixed sidebar) instead of the full viewport width. */
+  @media (min-width: 1024px) {
+    body:has(.playlist-sidebar) footer {
+      padding-left: 16rem;
+    }
   }
 }

@@ -28,6 +28,7 @@ export default async function Home() {
           <col className="w-1/5" />
           <col className="w-1/3" />
           <col className="w-1/5" />
+          <col className="w-10" />
           <col className="w-32" />
         </colgroup>
         <tbody>
@@ -37,9 +38,9 @@ export default async function Home() {
               href={`/playlists/${playlist.appSlug}`}
               className="border-b border-black hover:bg-gray-50"
             >
-              <td className="py-1 pl-6 pr-4 align-middle text-gray-400">{index + 1}</td>
-              <td className="truncate py-1 pr-4 align-middle">{playlist.title}</td>
-              <td className="overflow-hidden py-1 pr-4 align-middle">
+              <td className="py-2 pl-6 pr-4 align-middle text-gray-400">{index + 1}</td>
+              <td className="truncate py-2 pr-4 align-middle">{playlist.title}</td>
+              <td className="overflow-hidden py-2 pr-4 align-middle">
                 <div className="flex gap-1 overflow-hidden">
                   {playlist.thumbnails.map((thumbnail) => (
                     <div
@@ -61,10 +62,28 @@ export default async function Home() {
                   ))}
                 </div>
               </td>
-              <td className="py-1 pr-4 align-middle">
+              <td className="py-2 pr-4 align-middle">
                 <TagChips tags={playlist.tags} />
               </td>
-              <td className="py-1 pr-6 align-middle">{formatAddedAt(playlist.addedAt)}</td>
+              <td className="py-2 pr-4 align-middle">
+                <div
+                  className="tooltip tooltip-slim h-7 w-7"
+                  data-tooltip={playlist.creator.name}
+                >
+                  <div className="h-full w-full overflow-hidden rounded-full">
+                    {playlist.creator.avatarUrl ? (
+                      <Image
+                        src={playlist.creator.avatarUrl}
+                        alt={playlist.creator.name}
+                        width={28}
+                        height={28}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              </td>
+              <td className="py-2 pr-6 align-middle">{formatAddedAt(playlist.addedAt)}</td>
             </ClickableRow>
           ))}
         </tbody>

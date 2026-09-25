@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
         hostname: "images.are.na",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "static.avatars.are.na",
+        pathname: "/**",
+      },
     ],
   },
   experimental: {

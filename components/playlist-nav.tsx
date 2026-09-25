@@ -18,24 +18,32 @@ export default function PlaylistNav({
   return (
     <div className="flex items-center gap-3 font-mono text-[10px] text-gray-500">
       {prev && (
+        <div
+        className="tooltip tooltip-slim max-lg:tooltip-left"
+        data-tooltip="previous playlist"
+      >
         <Link
           href={`/playlists/${prev.appSlug}`}
           className="flex items-center gap-1 hover:text-black"
-          title="Previous playlist"
         >
           <span>←</span>
           <span className="max-w-[10rem] truncate">{prev.title}</span>
         </Link>
+        </div>
       )}
       {next && (
+         <div
+         className="tooltip tooltip-slim max-lg:tooltip-left"
+         data-tooltip="next playlist"
+       >
         <Link
           href={`/playlists/${next.appSlug}`}
           className="flex items-center gap-1 hover:text-black"
-          title="Next playlist"
         >
           <span className="max-w-[10rem] truncate">{next.title}</span>
           <span>→</span>
         </Link>
+        </div>
       )}
     </div>
   )

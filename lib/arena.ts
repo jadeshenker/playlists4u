@@ -31,6 +31,13 @@ type ArenaImageUrls = {
   original?: { url: string }
 }
 
+type ArenaUser = {
+  full_name?: string | null
+  username?: string | null
+  avatar_image?: { thumb?: string | null; display?: string | null } | null
+  avatar?: string | null
+}
+
 type ArenaContentItem = {
   id: number
   slug?: string
@@ -43,6 +50,7 @@ type ArenaContentItem = {
   source?: { url?: string | null } | null
   content?: string | null
   metadata?: { description?: string | null } | null
+  user?: ArenaUser | null
 }
 
 type ArenaChannelResponse = {
@@ -52,12 +60,18 @@ type ArenaChannelResponse = {
   length: number
   contents?: ArenaContentItem[] | null
   metadata?: { description?: string | null } | null
+  user?: ArenaUser | null
 }
 
 export type ArenaBlockThumbnail = {
   id: number
   imageUrl: string | null
   title: string | null
+}
+
+export type ArenaCreator = {
+  name: string
+  avatarUrl: string | null
 }
 
 /** A non-Spotify block in a playlist's content grid: either an image, or text/a link. */
@@ -73,6 +87,7 @@ export type ArenaPlaylistChannel = {
   addedAt: string | null
   thumbnails: ArenaBlockThumbnail[]
   tags: string[]
+  creator: ArenaCreator
 }
 
 export type ArenaPlaylistNeighbor = {
@@ -90,6 +105,7 @@ export type ArenaPlaylistDetail = {
   otherBlocks: ArenaContentBlock[]
   prevPlaylist: ArenaPlaylistNeighbor | null
   nextPlaylist: ArenaPlaylistNeighbor | null
+  creator: ArenaCreator
 }
 
 const TAGS_MARKER_RE = /tags:\s*/i
@@ -125,6 +141,14 @@ function splitDescriptionTags(description: string | null | undefined): {
   const rest = `${before}${afterTags}`.trim()
 
   return { tags, rest: rest.length > 0 ? rest : null }
+}
+
+/** The sub-channel's owner, for display as the playlist's creator. */
+function extractCreator(user: ArenaUser | null | undefined): ArenaCreator {
+  return {
+    name: user?.full_name?.trim() || user?.username?.trim() || "unknown",
+    avatarUrl: user?.avatar_image?.display ?? user?.avatar_image?.thumb ?? user?.avatar ?? null,
+  }
 }
 
 /** Turns a display title into a URL-friendly slug by swapping spaces for dashes. */
@@ -258,6 +282,7 @@ export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
         addedAt: channel.connected_at ?? null,
         thumbnails,
         tags,
+        creator: extractCreator(channel.user),
       }
     })
   )
@@ -317,5 +342,6 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     otherBlocks,
     prevPlaylist,
     nextPlaylist,
+    creator: extractCreator(channel.user),
   }
 }

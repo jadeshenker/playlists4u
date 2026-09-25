@@ -118,7 +118,7 @@ export default function MiniPlayer() {
           content or the footer. */}
       <div className={`${BAR_HEIGHT} shrink-0`} aria-hidden />
 
-      <div className={`fixed bottom-0 left-0 right-0 z-50 ${BAR_HEIGHT} border-t border-gray-300 bg-white`}>
+      <div className={`mini-player-bar fixed bottom-0 left-0 right-0 z-50 ${BAR_HEIGHT} border-t border-gray-300 bg-white`}>
         <div className="mx-auto flex h-full max-w-3xl items-center gap-4 px-6">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden bg-gray-50">

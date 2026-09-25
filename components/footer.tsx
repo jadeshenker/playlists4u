@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="shrink-0 py-3 text-center text-xs text-[#888]">
+    <footer className="shrink-0 pt-6 pb-3 text-center text-xs text-[#888]">
       <p>
         built <span className="tooltip tooltip-up" data-tooltip="with love,">
           (づ˶•༝•˶)づ♡,
