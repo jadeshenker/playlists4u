@@ -12,6 +12,7 @@ const dmMono = DM_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.1-800-i-love-music.com"),
   title: "ilovemusic",
   description: "spotify + are.na playground",
 }

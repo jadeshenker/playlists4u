@@ -1,3 +1,5 @@
+import { cache } from "react"
+
 const ARENA_API_BASE = "https://api.are.na/v2"
 
 /** The "channel of channels" — each sub-channel is one playlist. */
@@ -297,7 +299,9 @@ export async function fetchPlaylistChannels(): Promise<ArenaPlaylistChannel[]> {
  * Spotify track IDs for its Spotify blocks (most-recently-added first),
  * plus the non-Spotify blocks that have an image, for the content grid.
  */
-export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylistDetail | null> {
+export const fetchPlaylistBySlug = cache(async function fetchPlaylistBySlug(
+  appSlug: string
+): Promise<ArenaPlaylistDetail | null> {
   const parent = await fetchChannel(PLAYLISTS_CHANNEL_SLUG, 100)
   const subChannels = getPlaylistSubChannels(parent)
   const matchIndex = subChannels.findIndex(
@@ -351,4 +355,4 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     nextPlaylist,
     creator: extractCreator(channel.user),
   }
-}
+})

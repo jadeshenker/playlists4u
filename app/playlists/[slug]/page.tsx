@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import type { Metadata } from "next"
 import { fetchPlaylistBySlug } from "@/lib/arena"
 import { fetchTracksByIds } from "@/lib/spotify"
 import { formatDuration } from "@/lib/format"
@@ -15,6 +16,16 @@ import PlaylistHeader from "@/components/playlist-header"
 export const dynamic = "force-dynamic"
 
 type PageProps = { params: Promise<{ slug: string }> }
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
+  const playlist = await fetchPlaylistBySlug(slug)
+  if (!playlist) return {}
+
+  return {
+    title: `${playlist.title} | ilovemusic`,
+  }
+}
 
 export default async function PlaylistPage({ params }: PageProps) {
   const { slug } = await params
