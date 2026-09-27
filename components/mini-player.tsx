@@ -13,7 +13,7 @@ import { PlayIcon, PauseIcon, SkipPreviousIcon, SkipNextIcon } from "@/component
 // Keep in sync with the spacer height below the fixed bar — the bar's own
 // height must exactly match it, or page content gets clipped/overlapped.
 // Taller on mobile to fit the stacked 3-row layout.
-const BAR_HEIGHT = "h-32 md:h-16"
+const BAR_HEIGHT = "h-36 md:h-16"
 
 /** Fixed bar pinned to the bottom of the viewport, mounted once in the root
  * layout so it (and playback) survives navigation between the home page and
@@ -110,8 +110,10 @@ export default function MiniPlayer() {
 
   if (!currentTrack) return null
 
+  // Bigger tap targets and icons on mobile; the icons are shared with the
+  // track list, so they're scaled here rather than in play-icons.
   const controlButtonClass =
-    "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-gray-300 hover:bg-gray-50"
+    "flex h-10 w-10 max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5 md:h-6 md:w-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-gray-300 hover:bg-gray-50"
 
   return (
     <>
@@ -192,7 +194,7 @@ export default function MiniPlayer() {
           </div>
 
           {/* Mobile row 3: playback controls, centered. */}
-          <div className="flex items-center justify-center gap-1.5 md:order-2 md:shrink-0 md:justify-start">
+          <div className="flex items-center justify-center gap-3 md:order-2 md:gap-1.5 md:shrink-0 md:justify-start">
             <button onClick={previous} className={controlButtonClass}>
               <SkipPreviousIcon />
             </button>

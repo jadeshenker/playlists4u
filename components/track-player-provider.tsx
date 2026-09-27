@@ -70,6 +70,7 @@ type YoutubePlayerInstance = {
 type YoutubePlayerOptions = {
   height: string
   width: string
+  playerVars?: Record<string, string | number>
   events: {
     onReady: () => void
     onStateChange: (event: { data: number }) => void
@@ -250,6 +251,9 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
       const player = new window.YT.Player(youtubeElRef.current, {
         height: "113",
         width: "200",
+        // Without playsinline, iOS Safari hijacks playback into its native
+        // fullscreen video player instead of keeping the embed hidden.
+        playerVars: { playsinline: 1 },
         events: {
           onReady: () => resolve(player),
           // Ignore transient states (buffering, cued, unstarted) that fire
