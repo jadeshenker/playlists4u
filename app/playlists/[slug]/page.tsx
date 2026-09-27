@@ -1,5 +1,3 @@
-import Image from "next/image"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { fetchPlaylistBySlug } from "@/lib/arena"
 import { fetchTracksByIds } from "@/lib/spotify"
@@ -12,6 +10,7 @@ import GoHomeShortcut from "@/components/go-home-shortcut"
 import PlaylistNav from "@/components/playlist-nav"
 import BlockViewerProvider from "@/components/block-viewer-provider"
 import BlockViewer from "@/components/block-viewer"
+import PlaylistHeader from "@/components/playlist-header"
 
 export const dynamic = "force-dynamic"
 
@@ -36,34 +35,12 @@ export default async function PlaylistPage({ params }: PageProps) {
     <BlockViewerProvider>
       <main className="flex flex-1 flex-col md:flex-row pb-6">
         <RegisterTracks tracks={playerTracks} />
-        <div className="playlist-sidebar flex items-center justify-between border-b border-gray-600 py-2 md:fixed md:top-0 md:left-0 md:z-10 md:w-86 md:flex-col md:items-stretch md:justify-start md:overflow-y-auto md:border-b-0 md:border-r md:border-gray-300 md:bg-white md:py-6">
-          <div className="px-6">
-            <p className="text-sm">
-              <Link href="/" className="link">
-                PLAYLISTS4U
-              </Link>{" "}
-              / <span className="font-semibold">{playlist.title}</span>
-            </p>
-            <div className="grid grid-cols-[5rem_1fr] items-center gap-y-1 pt-3 text-xs">
-              <span className="text-gray-500">author</span>
-              <div className="flex items-center gap-2">
-                {playlist.creator.avatarUrl ? (
-                  <Image
-                    src={playlist.creator.avatarUrl}
-                    alt={playlist.creator.name}
-                    width={20}
-                    height={20}
-                    className="h-5 w-5 shrink-0 rounded-full object-cover"
-                  />
-                ) : null}
-                <span>{playlist.creator.name}</span>
-              </div>
-              <span className="text-gray-500">tags</span>
-              <span>{playlist.tags.length > 0 ? playlist.tags.join(" / ") : "--"}</span>
-              <span className="text-gray-500">description</span>
-              <span>{playlist.description || "--"}</span>
-            </div>
-          </div>
+        <PlaylistHeader
+          title={playlist.title}
+          creator={playlist.creator}
+          tags={playlist.tags}
+          description={playlist.description}
+        >
           <div className="flex shrink-0 flex-col items-end gap-2 px-6 md:items-start md:mt-auto">
             <BlockViewer />
             <div className="flex flex-col items-end gap-2 md:items-start md:pt-2">
@@ -71,7 +48,7 @@ export default async function PlaylistPage({ params }: PageProps) {
               <PlaylistNav prev={playlist.prevPlaylist} next={playlist.nextPlaylist} />
             </div>
           </div>
-        </div>
+        </PlaylistHeader>
         <div className="min-w-0 flex-1 md:ml-86">
           {/* Wide enough that a track row (title, artist, and its full command
               bar) fits on one line for most song names. */}

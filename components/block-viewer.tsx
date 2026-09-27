@@ -26,7 +26,7 @@ export default function BlockViewer() {
       >
         <div className="min-h-0 overflow-hidden bg-white md:bg-transparent">
           {selectedBlock && (
-            <div className="flex flex-col gap-2 p-3 text-xs">
+            <div className="block-viewer-content flex flex-col gap-2 p-3 text-xs md:p-0">
               <div className="flex aspect-square items-center justify-center overflow-hidden bg-gray-50">
                 {selectedBlock.kind === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element -- natural size is unknown ahead of time
@@ -41,9 +41,11 @@ export default function BlockViewer() {
                   </p>
                 )}
               </div>
-              <p className="font-semibold">{selectedBlock.title || "--"}</p>
-              <p className="text-gray-500">{selectedBlock.description || "--"}</p>
-              <p className="text-gray-400">added {formatAddedAt(selectedBlock.addedAt)}</p>
+              <div className="flex flex-col gap-2 md:px-3 md:pb-3">
+                <p className="font-semibold">{selectedBlock.title || "--"}</p>
+                <p className="text-gray-500">{selectedBlock.description || "--"}</p>
+                <p className="text-gray-400">added {formatAddedAt(selectedBlock.addedAt)}</p>
+              </div>
             </div>
           )}
         </div>

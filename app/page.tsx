@@ -13,23 +13,23 @@ export default async function Home() {
   return (
     <main className="flex flex-1 flex-col">
       <div className="flex items-start justify-between border-b border-gray-600 pt-6 pb-3">
-        <div className="px-6">
-          <p className="font-semibold text-sm">
+        <div className="px-3 md:px-6">
+          <p className="font-mono text-sm">
             PLAYLISTS4U
           </p>
         </div>
-        <div className="px-6">
+        <div className="px-3 md:px-6">
           <AboutButton />
         </div>
       </div>
       <table className="w-full table-fixed border-collapse">
         <colgroup>
-          <col className="w-10" />
-          <col className="w-1/5" />
-          <col className="w-1/3" />
-          <col className="w-1/5" />
-          <col className="w-10" />
-          <col className="w-32" />
+          <col className="w-8 md:w-10" />
+          <col className="md:w-1/5" />
+          <col className="w-[100px] md:w-1/3" />
+          <col className="hidden md:table-column md:w-1/5" />
+          <col className="w-9 md:w-10" />
+          <col className="w-28 md:w-32" />
         </colgroup>
         <tbody>
           {playlists.map((playlist, index) => (
@@ -38,9 +38,9 @@ export default async function Home() {
               href={`/playlists/${playlist.appSlug}`}
               className="border-b border-black hover:bg-gray-50"
             >
-              <td className="py-2 pl-6 pr-4 align-middle text-gray-400">{index + 1}</td>
-              <td className="truncate py-2 pr-4 align-middle">{playlist.title}</td>
-              <td className="overflow-hidden py-2 pr-4 align-middle">
+              <td className="py-2 pl-3 pr-2 align-middle text-gray-400 md:pl-6 md:pr-4">{index + 1}</td>
+              <td className="truncate py-2 pr-2 align-middle md:pr-4">{playlist.title}</td>
+              <td className="overflow-hidden py-2 pr-2 align-middle md:pr-4">
                 <div className="flex gap-1 overflow-hidden">
                   {playlist.thumbnails.map((thumbnail) => (
                     <div
@@ -62,10 +62,10 @@ export default async function Home() {
                   ))}
                 </div>
               </td>
-              <td className="py-2 pr-4 align-middle">
+              <td className="hidden py-2 pr-4 align-middle md:table-cell">
                 <TagChips tags={playlist.tags} />
               </td>
-              <td className="py-2 pr-4 align-middle">
+              <td className="py-2 pr-2 align-middle md:pr-4">
                 <div
                   className="tooltip tooltip-slim h-7 w-7"
                   data-tooltip={playlist.creator.name}
@@ -83,7 +83,7 @@ export default async function Home() {
                   </div>
                 </div>
               </td>
-              <td className="py-2 pr-6 align-middle">{formatAddedAt(playlist.addedAt)}</td>
+              <td className="py-2 pr-3 align-middle md:pr-6">{formatAddedAt(playlist.addedAt)}</td>
             </ClickableRow>
           ))}
         </tbody>
