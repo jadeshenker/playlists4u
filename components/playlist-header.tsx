@@ -10,10 +10,11 @@ type PlaylistHeaderProps = {
   creator: { name: string; avatarUrl: string | null }
   tags: string[]
   description: string | null
+  link: string | null
   children: ReactNode
 }
 
-export default function PlaylistHeader({ title, creator, tags, description, children }: PlaylistHeaderProps) {
+export default function PlaylistHeader({ title, creator, tags, description, link, children }: PlaylistHeaderProps) {
   const { selectedBlock, collapsed: viewerCollapsed } = useBlockViewer()
   const [scrolled, setScrolled] = useState(false)
   const headerRef = useRef<HTMLDivElement>(null)
@@ -86,6 +87,14 @@ export default function PlaylistHeader({ title, creator, tags, description, chil
           <span>{tags.length > 0 ? tags.join(" / ") : "--"}</span>
           <span className="text-gray-500">description</span>
           <span>{description || "--"}</span>
+          <span className="text-gray-500">link</span>
+          {link ? (
+            <a href={link} target="_blank" rel="noopener noreferrer" className="link truncate">
+              view on are.na
+            </a>
+          ) : (
+            <span>--</span>
+          )}
         </div>
       </div>
       {children}

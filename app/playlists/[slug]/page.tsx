@@ -40,6 +40,7 @@ export default async function PlaylistPage({ params }: PageProps) {
           creator={playlist.creator}
           tags={playlist.tags}
           description={playlist.description}
+          link={playlist.arenaUrl}
         >
           <div className="flex shrink-0 flex-col items-end gap-2 px-6 md:items-start md:mt-auto">
             <BlockViewer />

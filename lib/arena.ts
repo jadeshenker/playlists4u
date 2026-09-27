@@ -32,6 +32,7 @@ type ArenaImageUrls = {
 }
 
 type ArenaUser = {
+  slug?: string | null
   full_name?: string | null
   username?: string | null
   avatar_image?: { thumb?: string | null; display?: string | null } | null
@@ -102,6 +103,7 @@ export type ArenaPlaylistDetail = {
   trackImages: Record<string, string | null>
   tags: string[]
   description: string | null
+  arenaUrl: string | null
   otherBlocks: ArenaContentBlock[]
   prevPlaylist: ArenaPlaylistNeighbor | null
   nextPlaylist: ArenaPlaylistNeighbor | null
@@ -334,6 +336,8 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
 
   const { tags, rest: description } = splitDescriptionTags(channel.metadata?.description)
 
+  const arenaUrl = channel.user?.slug ? `https://www.are.na/${channel.user.slug}/${channel.slug}` : null
+
   return {
     title: match.title ?? match.slug,
     appSlug,
@@ -341,6 +345,7 @@ export async function fetchPlaylistBySlug(appSlug: string): Promise<ArenaPlaylis
     trackImages,
     tags,
     description,
+    arenaUrl,
     otherBlocks,
     prevPlaylist,
     nextPlaylist,
