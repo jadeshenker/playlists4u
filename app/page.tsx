@@ -1,6 +1,6 @@
 import Image from "next/image"
-import AboutButton from "@/components/about-button"
 import ClickableRow from "@/components/clickable-row"
+import SiteHeader from "@/components/site-header"
 import TagChips from "@/components/tag-chips"
 import { fetchPlaylistChannels } from "@/lib/arena"
 import { formatAddedAt } from "@/lib/format"
@@ -12,16 +12,7 @@ export default async function Home() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <div className="flex items-start justify-between border-b border-gray-600 pt-6 pb-3">
-        <div className="px-3 md:px-6">
-          <p className="font-mono text-sm">
-            PLAYLISTS4U
-          </p>
-        </div>
-        <div className="px-3 md:px-6">
-          <AboutButton />
-        </div>
-      </div>
+      <SiteHeader />
       <table className="w-full table-fixed border-collapse">
         <colgroup>
           <col className="w-8 md:w-10" />
