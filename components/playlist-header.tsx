@@ -2,8 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useRef, useState, type ReactNode } from "react"
-import { useBlockViewer } from "@/components/block-viewer-provider"
+import { useEffect, useState, type ReactNode } from "react"
 
 type PlaylistHeaderProps = {
   title: string
@@ -15,32 +14,17 @@ type PlaylistHeaderProps = {
 }
 
 export default function PlaylistHeader({ title, creator, tags, description, link, children }: PlaylistHeaderProps) {
-  const { selectedBlock, collapsed: viewerCollapsed } = useBlockViewer()
-  const [scrolled, setScrolled] = useState(false)
-  const headerRef = useRef<HTMLDivElement>(null)
-
-  const collapsed = scrolled || (selectedBlock !== null && !viewerCollapsed)
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
+    const onScroll = () => setCollapsed(window.scrollY > 8)
     onScroll()
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  useEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-    const observer = new ResizeObserver(([entry]) => {
-      document.documentElement.style.setProperty("--playlist-header-height", `${entry.contentRect.height}px`)
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <div
-      ref={headerRef}
       className={`playlist-sidebar sticky top-0 z-20 flex items-center justify-between border-b border-gray-300 bg-white md:fixed md:top-0 md:left-0 md:z-10 md:w-86 md:flex-col md:items-stretch md:justify-start md:overflow-y-auto md:border-b-0 md:border-r md:border-gray-300 md:bg-white md:py-6 ${
         collapsed ? "py-4" : "py-2"
       }`}

@@ -12,8 +12,7 @@ import { PlayIcon, PauseIcon, SkipPreviousIcon, SkipNextIcon } from "@/component
 
 // Keep in sync with the spacer height below the fixed bar — the bar's own
 // height must exactly match it, or page content gets clipped/overlapped.
-// Taller on mobile to fit the stacked 3-row layout; also kept in sync with
-// the ".block-viewer" bottom offset in globals.css.
+// Taller on mobile to fit the stacked 3-row layout.
 const BAR_HEIGHT = "h-32 md:h-16"
 
 /** Fixed bar pinned to the bottom of the viewport, mounted once in the root

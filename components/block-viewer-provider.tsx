@@ -1,13 +1,13 @@
 "use client"
 
-import { createContext, useContext, useState } from "react"
+import { createContext, useCallback, useContext, useState } from "react"
 import type { ArenaContentBlock } from "@/lib/arena"
 
 type BlockViewerContextValue = {
   selectedBlock: ArenaContentBlock | null
-  collapsed: boolean
+  open: boolean
   selectBlock: (block: ArenaContentBlock) => void
-  toggleCollapsed: () => void
+  close: () => void
 }
 
 const BlockViewerContext = createContext<BlockViewerContextValue | null>(null)
@@ -19,24 +19,27 @@ export function useBlockViewer() {
 }
 
 /** Shared selection state between the content grid (which sets it on click)
- * and the sidebar's block viewer (which displays it). Scoped to a single
- * playlist page. */
+ * and the block viewer (which displays it). Scoped to a single playlist page.
+ * The selected block is kept after closing so the viewer can animate out
+ * with its content still in place. */
 export default function BlockViewerProvider({ children }: { children: React.ReactNode }) {
   const [selectedBlock, setSelectedBlock] = useState<ArenaContentBlock | null>(null)
-  const [collapsed, setCollapsed] = useState(true)
+  const [open, setOpen] = useState(false)
+
+  const close = useCallback(() => setOpen(false), [])
 
   function selectBlock(block: ArenaContentBlock) {
     setSelectedBlock(block)
-    setCollapsed(false)
+    setOpen(true)
   }
 
   return (
     <BlockViewerContext.Provider
       value={{
         selectedBlock,
-        collapsed,
+        open,
         selectBlock,
-        toggleCollapsed: () => setCollapsed((isCollapsed) => !isCollapsed),
+        close,
       }}
     >
       {children}

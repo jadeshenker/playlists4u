@@ -4,7 +4,7 @@ import type { ArenaContentBlock } from "@/lib/arena"
 import { useBlockViewer } from "@/components/block-viewer-provider"
 
 /** A grid of uniform squares, are.na-style — images are cropped to fill, text is clipped to fit.
- * Clicking a block loads it into the sidebar's block viewer. */
+ * Clicking a block opens it in the block viewer. */
 export default function ContentGrid({ blocks }: { blocks: ArenaContentBlock[] }) {
   const { selectBlock } = useBlockViewer()
 
