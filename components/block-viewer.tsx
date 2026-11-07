@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useBlockViewer } from "@/components/block-viewer-provider"
+import { useTrackPlayer } from "@/components/track-player-provider"
+import { PlayIcon } from "@/components/play-icons"
 import type { ArenaContentBlock } from "@/lib/arena"
 import { formatAddedAt } from "@/lib/format"
 
@@ -98,7 +100,7 @@ export default function BlockViewer() {
                 ref={contentRef}
                 className="min-h-0 overflow-y-auto overscroll-contain px-3 pb-3"
               >
-                {selectedBlock && <BlockDetails block={selectedBlock} />}
+                {selectedBlock && <BlockDetails key={selectedBlock.id} block={selectedBlock} />}
               </div>
             </div>
           </div>,
@@ -116,7 +118,11 @@ export default function BlockViewer() {
               <div className="flex items-center justify-end pl-3 text-xs">
                 <CloseButton onClick={close} className="h-7 w-7" />
               </div>
-              <BlockDetails block={selectedBlock} textClassName="px-3 pb-3" />
+              <BlockDetails
+                key={selectedBlock.id}
+                block={selectedBlock}
+                textClassName="px-3 pb-3"
+              />
             </div>
           )}
         </div>
@@ -146,8 +152,13 @@ function BlockDetails({
 }) {
   return (
     <div className="flex flex-col gap-2 text-xs">
-      <div className="flex aspect-square items-center justify-center overflow-hidden bg-gray-50">
-        {block.kind === "image" ? (
+      {/* Square, scaling with the (resizable) sidebar's width — but on
+          desktop, capped in height so a wide sidebar can't grow it taller
+          than the screen and push the title/description out of view. */}
+      <div className="flex aspect-square items-center justify-center overflow-hidden bg-gray-50 md:aspect-auto md:h-[min(calc(var(--sidebar-width)-3rem-2px),55vh)]">
+        {block.youtubeId ? (
+          <YoutubeEmbed block={block} videoId={block.youtubeId} />
+        ) : block.kind === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element -- natural size is unknown ahead of time
           <img
             src={block.imageUrl}
@@ -164,5 +175,53 @@ function BlockDetails({
         <p className="text-gray-400">added {formatAddedAt(block.addedAt)}</p>
       </div>
     </div>
+  )
+}
+
+/** A YouTube block: its thumbnail with a play button, swapped for the actual
+ * embed once clicked (so nothing loads from YouTube until asked for). Only
+ * one thing plays at a time — starting the video pauses the mini player,
+ * and resuming the mini player (or closing the viewer) tears the video down. */
+function YoutubeEmbed({ block, videoId }: { block: ArenaContentBlock; videoId: string }) {
+  const { open } = useBlockViewer()
+  const { isPlaying, pause } = useTrackPlayer()
+  const [playing, setPlaying] = useState(false)
+
+  useEffect(() => {
+    if (!open || isPlaying) setPlaying(false)
+  }, [open, isPlaying])
+
+  if (playing) {
+    return (
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1`}
+        title={block.title ?? "youtube video"}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+        className="h-full w-full bg-black"
+      />
+    )
+  }
+
+  const thumbnailUrl =
+    block.kind === "image" ? block.imageUrl : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+
+  return (
+    <button
+      onClick={() => {
+        pause()
+        setPlaying(true)
+      }}
+      aria-label="play video"
+      className="group relative h-full w-full cursor-pointer"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- natural size is unknown ahead of time */}
+      <img src={thumbnailUrl} alt={block.title ?? ""} className="h-full w-full object-contain" />
+      <span className="absolute inset-0 flex items-center justify-center">
+        <span className="flex h-10 w-10 items-center justify-center rounded-sm border border-gray-300 bg-white group-hover:bg-gray-50 [&_svg]:h-3.5 [&_svg]:w-3.5">
+          <PlayIcon />
+        </span>
+      </span>
+    </button>
   )
 }

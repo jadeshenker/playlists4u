@@ -2,6 +2,7 @@
 
 import type { ArenaContentBlock } from "@/lib/arena"
 import { useBlockViewer } from "@/components/block-viewer-provider"
+import { PlayIcon } from "@/components/play-icons"
 
 /** A grid of uniform squares, are.na-style — images are cropped to fill, text is clipped to fit.
  * Clicking a block opens it in the block viewer. */
@@ -19,8 +20,16 @@ export default function ContentGrid({ blocks }: { blocks: ArenaContentBlock[] })
           className="flex cursor-pointer flex-col gap-1 text-left"
         >
           <div
-            className={`flex aspect-square items-center justify-center overflow-hidden ${block.kind === "text" ? "border border-gray-200" : ""}`}
+            className={`relative flex aspect-square items-center justify-center overflow-hidden ${block.kind === "text" ? "border border-gray-200" : ""}`}
           >
+            {block.youtubeId && (
+              <span
+                aria-label="video"
+                className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-sm border border-gray-300 bg-white [&_svg]:h-2 [&_svg]:w-2"
+              >
+                <PlayIcon />
+              </span>
+            )}
             {block.kind === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element -- natural size is unknown ahead of time
               <img

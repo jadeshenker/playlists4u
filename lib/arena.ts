@@ -77,10 +77,19 @@ export type ArenaCreator = {
   avatarUrl: string | null
 }
 
+type ArenaContentBlockBase = {
+  id: number
+  title: string | null
+  description: string | null
+  addedAt: string | null
+  // Set when the block links to a YouTube video, so the viewer can embed it.
+  youtubeId: string | null
+}
+
 /** A non-Spotify block in a playlist's content grid: either an image, or text/a link. */
 export type ArenaContentBlock =
-  | { kind: "image"; id: number; title: string | null; imageUrl: string; description: string | null; addedAt: string | null }
-  | { kind: "text"; id: number; title: string | null; text: string; description: string | null; addedAt: string | null }
+  | (ArenaContentBlockBase & { kind: "image"; imageUrl: string })
+  | (ArenaContentBlockBase & { kind: "text"; text: string })
 
 export type ArenaPlaylistChannel = {
   slug: string
@@ -167,6 +176,20 @@ function extractSpotifyTrackId(block: ArenaContentItem): string | null {
   return match ? match[1] : null
 }
 
+// Covers youtube.com/watch?v=, youtu.be/, /shorts/, /embed/, /live/ and
+// music.youtube.com links. Video IDs are always 11 chars of [A-Za-z0-9_-].
+const YOUTUBE_URL_RE =
+  /(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#\s]*&)?v=|shorts\/|embed\/|live\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+
+function extractYoutubeId(block: ArenaContentItem): string | null {
+  const candidates = [block.source?.url, block.content?.trim()]
+  for (const candidate of candidates) {
+    const match = candidate?.match(YOUTUBE_URL_RE)
+    if (match) return match[1]
+  }
+  return null
+}
+
 /** Best-quality image URL available for a block, for rendering at its natural size. */
 function extractContentImageUrl(block: ArenaContentItem): string | null {
   return (
@@ -191,11 +214,13 @@ function toContentBlock(block: ArenaContentItem): ArenaContentBlock | null {
   const title = rawTitle && rawTitle.trim().toLowerCase() !== "untitled" ? rawTitle : null
   const description = block.metadata?.description?.trim() || null
   const addedAt = block.connected_at ?? null
+  const youtubeId = extractYoutubeId(block)
+  const base = { id: block.id, title, description, addedAt, youtubeId }
   const imageUrl = extractContentImageUrl(block)
-  if (imageUrl) return { kind: "image", id: block.id, title, imageUrl, description, addedAt }
+  if (imageUrl) return { ...base, kind: "image", imageUrl }
 
   const text = block.content?.trim() || block.source?.url?.trim() || null
-  if (text) return { kind: "text", id: block.id, title, text, description, addedAt }
+  if (text) return { ...base, kind: "text", text }
 
   return null
 }

@@ -8,7 +8,7 @@ import KeySequence from "@/components/key-sequence"
 import { copyToClipboard } from "@/lib/clipboard"
 import { isTypingTarget } from "@/lib/dom"
 import { formatMs } from "@/lib/format"
-import { PlayIcon, PauseIcon, SkipPreviousIcon, SkipNextIcon } from "@/components/play-icons"
+import { PlayIcon, PauseIcon, SkipPreviousIcon, SkipNextIcon, VideoIcon } from "@/components/play-icons"
 
 // Keep in sync with the spacer height below the fixed bar — the bar's own
 // height must exactly match it, or page content gets clipped/overlapped.
@@ -29,6 +29,8 @@ export default function MiniPlayer() {
     position,
     duration,
     togglePlayPause,
+    videoVisible,
+    setVideoVisible,
     next,
     previous,
     seekToFraction,
@@ -212,6 +214,16 @@ export default function MiniPlayer() {
             </button>
             <button onClick={next} className={controlButtonClass}>
               <SkipNextIcon />
+            </button>
+            <button
+              onClick={() => setVideoVisible(!videoVisible)}
+              disabled={!videoId || isUnplayable}
+              aria-pressed={videoVisible}
+              aria-label={videoVisible ? "hide video" : "show video"}
+              data-tooltip={videoVisible ? "hide video" : "show video"}
+              className={`${controlButtonClass} tooltip tooltip-up disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent ${videoVisible ? "bg-black text-white hover:bg-black" : ""}`}
+            >
+              <VideoIcon />
             </button>
           </div>
         </div>

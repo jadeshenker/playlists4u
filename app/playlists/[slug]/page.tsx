@@ -53,7 +53,7 @@ export default async function PlaylistPage({ params }: PageProps) {
           description={playlist.description}
           link={playlist.arenaUrl}
         >
-          <div className="flex shrink-0 flex-col items-end gap-2 px-6 md:items-start md:mt-auto">
+          <div className="flex shrink-0 flex-col items-end gap-2 px-6 md:items-start md:mt-auto md:pt-6">
             <BlockViewer />
             <div className="flex flex-col items-end gap-2 md:items-start md:pt-2">
               <GoHomeShortcut />
@@ -61,7 +61,7 @@ export default async function PlaylistPage({ params }: PageProps) {
             </div>
           </div>
         </PlaylistHeader>
-        <div className="min-w-0 flex-1 md:ml-86">
+        <div className="min-w-0 flex-1 md:ml-[var(--sidebar-width)]">
           {/* Wide enough that a track row (title, artist, and its full command
               bar) fits on one line for most song names. */}
           <div className="mx-auto w-full max-w-3xl">

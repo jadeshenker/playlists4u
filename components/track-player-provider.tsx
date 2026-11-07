@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { isTypingTarget } from "@/lib/dom"
+import FloatingVideo from "@/components/floating-video"
 
 export type YoutubeMatch = { videoId: string; title: string } | null
 
@@ -42,6 +43,11 @@ type TrackPlayerContextValue = {
   registerTracks: (tracks: PlayerTrack[]) => void
   playTrack: (trackId: string) => void
   togglePlayPause: () => void
+  pause: () => void
+  // Whether the (normally off-screen) YouTube embed is shown as a floating
+  // video above the mini player, instead of playing audio-only.
+  videoVisible: boolean
+  setVideoVisible: (visible: boolean) => void
   next: () => void
   previous: () => void
   seekToFraction: (fraction: number) => void
@@ -110,17 +116,6 @@ function loadYoutubeApi(): Promise<void> {
   return youtubeApiPromise
 }
 
-// Real (non-zero, non-transparent) dimensions moved off-screen — some
-// browsers (Firefox especially) apply extra autoplay scrutiny to
-// zero-size/opacity:0 iframes, treating them as suspicious hidden ads.
-const HIDDEN_STYLE = {
-  position: "fixed" as const,
-  top: 0,
-  left: "-9999px",
-  width: 200,
-  height: 113,
-}
-
 // Mounted once in the root layout so playback (and the hidden YouTube
 // embed) survives client-side navigation between the home page and any
 // playlist — only the *displayed* tracks change as pages mount/unmount via
@@ -146,6 +141,7 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
   const [isPlaying, setIsPlaying] = useState(false)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [videoVisible, setVideoVisible] = useState(false)
 
   // The player's events are wired up once at creation, so onError needs a
   // ref (not the currentTrackId state) to know which track was attempted.
@@ -320,6 +316,12 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
     }
   }
 
+  function pause() {
+    if (!isPlaying) return
+    youtubePlayerRef.current?.pauseVideo()
+    setIsPlaying(false)
+  }
+
   async function playTrack(trackId: string) {
     const match = matches[trackId]
     if (!isPlayableMatch(match) || unplayableTrackIds.has(trackId)) return
@@ -385,12 +387,20 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
         registerTracks,
         playTrack,
         togglePlayPause,
+        pause,
+        videoVisible,
+        setVideoVisible,
         next: () => step(1),
         previous: () => step(-1),
         seekToFraction,
       }}
     >
-      <div ref={youtubeElRef} style={HIDDEN_STYLE} />
+      <FloatingVideo
+        videoRef={youtubeElRef}
+        visible={videoVisible && currentTrack !== null}
+        title={currentTrack ? `${currentTrack.name} — ${currentTrack.artist}` : ""}
+        onClose={() => setVideoVisible(false)}
+      />
       {children}
     </TrackPlayerContext.Provider>
   )

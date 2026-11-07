@@ -37,3 +37,14 @@ export function SkipNextIcon() {
     </svg>
   )
 }
+
+/** A screen outline — toggles the mini player's floating video. */
+export function VideoIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="1" y="2.75" width="14" height="9.5" />
+      <path d="M6.5 5.5v4l3.5-2-3.5-2z" fill="currentColor" stroke="none" />
+      <path d="M4.5 14.5h7" />
+    </svg>
+  )
+}

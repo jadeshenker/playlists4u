@@ -5,6 +5,11 @@
   --font-mono: var(--font-dm-mono), monospace;
 }
 
+:root {
+  /* Desktop playlist sidebar width — user-resizable, see playlist-header. */
+  --sidebar-width: 21.5rem;
+}
+
 @layer components {
   .link {
     @apply text-[blue] underline;
@@ -85,6 +90,16 @@
 
   .playlist-sidebar {
     bottom: auto;
+  }
+
+  /* While the sidebar is being resized, iframes (the block viewer's video,
+     the floating video) would swallow pointer events and stall the drag. */
+  html[data-resizing-sidebar] {
+    cursor: col-resize;
+    user-select: none;
+  }
+  html[data-resizing-sidebar] iframe {
+    pointer-events: none;
   }
 
   @media (min-width: 48rem) {
