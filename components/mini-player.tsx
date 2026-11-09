@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { useTrackPlayer } from "@/components/track-player-provider"
+import { useTrackPlayer, formatTrackTitle } from "@/components/track-player-provider"
 import { useToast } from "@/components/toast-provider"
 import KeySequence from "@/components/key-sequence"
 import { copyToClipboard } from "@/lib/clipboard"
@@ -45,7 +45,10 @@ export default function MiniPlayer() {
   )
   const videoId = match && match !== "loading" && match !== "error" ? match.videoId : null
 
-  const songTitle = !currentTrack ? "" : `${currentTrack.name} — ${currentTrack.artist}`
+  const songTitle = !currentTrack ? "" : formatTrackTitle(currentTrack)
+  // Video entries (DJ sets etc.) have no Spotify track to link to.
+  const spotifyUrl =
+    currentTrack && !currentTrack.youtubeId ? `https://open.spotify.com/track/${currentTrack.id}` : null
 
   const progressPercent = duration > 0 ? (position / duration) * 100 : 0
 
@@ -63,7 +66,9 @@ export default function MiniPlayer() {
 
   async function copyTrackList() {
     setMenuOpen(false)
-    const text = tracks.map((track, i) => `${i + 1}. ${track.name} - ${track.artist}`).join("\n")
+    const text = tracks
+      .map((track, i) => `${i + 1}. ${track.artist ? `${track.name} - ${track.artist}` : track.name}`)
+      .join("\n")
     if (await copyToClipboard(text)) showToast("copied track list")
   }
 
@@ -89,7 +94,7 @@ export default function MiniPlayer() {
       if (key === "y") {
         if (videoId) copyLink(`https://www.youtube.com/watch?v=${videoId}`, "copied youtube link")
       } else if (key === "s") {
-        if (currentTrack) copyLink(`https://open.spotify.com/track/${currentTrack.id}`, "copied spotify link")
+        if (spotifyUrl) copyLink(spotifyUrl, "copied spotify link")
       } else if (key === "l") {
         copyTrackList()
       }
@@ -98,7 +103,7 @@ export default function MiniPlayer() {
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- copyLink/copyTrackList only close over stable setters/refs
-  }, [currentTrack, videoId, menuOpen, tracks])
+  }, [currentTrack, videoId, spotifyUrl, menuOpen, tracks])
 
   // Click anywhere outside the menu to dismiss it.
   useEffect(() => {
@@ -166,8 +171,11 @@ export default function MiniPlayer() {
                     <KeySequence active keys={["Y"]} />
                   </button>
                   <button
-                    onClick={() => copyLink(`https://open.spotify.com/track/${currentTrack.id}`, "copied spotify link")}
-                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50"
+                    onClick={() => {
+                      if (spotifyUrl) copyLink(spotifyUrl, "copied spotify link")
+                    }}
+                    disabled={!spotifyUrl}
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
                   >
                     <span>⧉ cpy spotify link</span>
                     <KeySequence active keys={["S"]} />

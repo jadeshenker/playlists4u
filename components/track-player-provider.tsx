@@ -17,6 +17,14 @@ export type PlayerTrack = {
   name: string
   artist: string
   albumArt: string | null
+  // Set for entries that *are* a YouTube video (e.g. a DJ set on a video
+  // board) — played directly, with no Spotify track or match lookup behind it.
+  youtubeId?: string
+}
+
+/** "Name — Artist", or just the name when there's no artist (video entries). */
+export function formatTrackTitle(track: PlayerTrack): string {
+  return track.artist ? `${track.name} — ${track.artist}` : track.name
 }
 
 type TrackPlayerContextValue = {
@@ -48,6 +56,11 @@ type TrackPlayerContextValue = {
   // video above the mini player, instead of playing audio-only.
   videoVisible: boolean
   setVideoVisible: (visible: boolean) => void
+  // A video board's in-page placeholder. While it's mounted and one of that
+  // board's videos is current, the embed is pinned over it instead of
+  // floating or hiding.
+  setVideoSlot: (el: HTMLDivElement | null) => void
+  videoDocked: boolean
   next: () => void
   previous: () => void
   seekToFraction: (fraction: number) => void
@@ -135,6 +148,12 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
 
   const [tracksById, setTracksById] = useState<Record<string, PlayerTrack>>({})
   const [activeTrackIds, setActiveTrackIds] = useState<string[]>([])
+  // The playlist that next/previous (and auto-advance) step through: a
+  // snapshot of the displayed playlist taken when the user starts playing
+  // from it. Kept separate from activeTrackIds so browsing to another
+  // playlist mid-set doesn't hijack what plays next — only starting
+  // something on that other playlist does.
+  const [queueTrackIds, setQueueTrackIds] = useState<string[]>([])
   const [matches, setMatches] = useState<Record<string, MatchState | undefined>>({})
   const [unplayableTrackIds, setUnplayableTrackIds] = useState<Set<string>>(new Set())
   const [currentTrackId, setCurrentTrackIdState] = useState<string | null>(null)
@@ -142,6 +161,7 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
   const [videoVisible, setVideoVisible] = useState(false)
+  const [videoSlot, setVideoSlot] = useState<HTMLDivElement | null>(null)
 
   // The player's events are wired up once at creation, so onError needs a
   // ref (not the currentTrackId state) to know which track was attempted.
@@ -163,6 +183,19 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
       return changed ? next : prev
     })
     setActiveTrackIds(newTracks.map((track) => track.id))
+
+    // Direct video entries already know their video — no search needed.
+    const directVideos = newTracks.filter(
+      (track) => track.youtubeId && !requestedMatchIdsRef.current.has(track.id)
+    )
+    if (directVideos.length > 0) {
+      directVideos.forEach((track) => requestedMatchIdsRef.current.add(track.id))
+      setMatches((prev) => {
+        const next = { ...prev }
+        for (const track of directVideos) next[track.id] = { videoId: track.youtubeId!, title: track.name }
+        return next
+      })
+    }
 
     const toFetch = newTracks.filter((track) => !requestedMatchIdsRef.current.has(track.id))
     if (toFetch.length === 0) return
@@ -249,7 +282,10 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
         width: "200",
         // Without playsinline, iOS Safari hijacks playback into its native
         // fullscreen video player instead of keeping the embed hidden.
-        playerVars: { playsinline: 1 },
+        // controls: 0 — the mini player owns play/seek/skip, so YouTube's
+        // own bar would just be a second, competing set of controls.
+        // rel: 0 keeps end-of-video suggestions to the same channel.
+        playerVars: { playsinline: 1, controls: 0, rel: 0, iv_load_policy: 3 },
         events: {
           onReady: () => resolve(player),
           // Ignore transient states (buffering, cued, unstarted) that fire
@@ -322,7 +358,14 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
     setIsPlaying(false)
   }
 
-  async function playTrack(trackId: string) {
+  // Called by the UI: playing something from the displayed playlist makes
+  // that playlist the queue.
+  function playTrack(trackId: string) {
+    if (activeTrackIds.includes(trackId)) setQueueTrackIds(activeTrackIds)
+    return loadTrack(trackId)
+  }
+
+  async function loadTrack(trackId: string) {
     const match = matches[trackId]
     if (!isPlayableMatch(match) || unplayableTrackIds.has(trackId)) return
 
@@ -339,18 +382,18 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
     setIsPlaying(true)
   }
 
-  // Steps to the next/previous track (within the currently displayed
-  // playlist) with a resolved match, skipping ahead past any tracks with no
-  // match (yet, or ever).
+  // Steps to the next/previous track within the queue (the playlist the
+  // current track was started from, wherever the user has since browsed)
+  // with a resolved match, skipping past any tracks with no match (yet, or ever).
   function step(direction: 1 | -1) {
     if (!currentTrackId) return
-    const index = activeTrackIds.indexOf(currentTrackId)
+    const index = queueTrackIds.indexOf(currentTrackId)
     if (index === -1) return
 
-    for (let offset = 1; offset <= activeTrackIds.length; offset++) {
-      const candidateId = activeTrackIds[(index + direction * offset + activeTrackIds.length) % activeTrackIds.length]
+    for (let offset = 1; offset <= queueTrackIds.length; offset++) {
+      const candidateId = queueTrackIds[(index + direction * offset + queueTrackIds.length) % queueTrackIds.length]
       if (isPlayableMatch(matches[candidateId]) && !unplayableTrackIds.has(candidateId)) {
-        playTrack(candidateId)
+        loadTrack(candidateId)
         return
       }
     }
@@ -372,6 +415,11 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
     return list
   }, [])
   const currentTrack = currentTrackId ? (tracksById[currentTrackId] ?? null) : null
+  // A floating (popped-out) video wins over docking, so the user can pop a
+  // set out on its board's page and keep watching it while browsing away.
+  const videoDocked = Boolean(
+    !videoVisible && videoSlot && currentTrack?.youtubeId && activeTrackIds.includes(currentTrack.id)
+  )
 
   return (
     <TrackPlayerContext.Provider
@@ -390,6 +438,8 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
         pause,
         videoVisible,
         setVideoVisible,
+        setVideoSlot,
+        videoDocked,
         next: () => step(1),
         previous: () => step(-1),
         seekToFraction,
@@ -398,7 +448,8 @@ export default function TrackPlayerProvider({ children }: { children: React.Reac
       <FloatingVideo
         videoRef={youtubeElRef}
         visible={videoVisible && currentTrack !== null}
-        title={currentTrack ? `${currentTrack.name} — ${currentTrack.artist}` : ""}
+        dockTarget={videoDocked ? videoSlot : null}
+        title={currentTrack ? formatTrackTitle(currentTrack) : ""}
         onClose={() => setVideoVisible(false)}
       />
       {children}

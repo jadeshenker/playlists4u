@@ -24,9 +24,11 @@ export function formatShortDate(iso: string | null): string {
 
 export function formatMs(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  const minutes = Math.floor(totalSeconds / 60)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  const ss = seconds.toString().padStart(2, "0")
+  return hours > 0 ? `${hours}:${minutes.toString().padStart(2, "0")}:${ss}` : `${minutes}:${ss}`
 }
 
 /** A playlist's total runtime, e.g. "34 min" or "1 hr 12 min". */

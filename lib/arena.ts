@@ -107,10 +107,21 @@ export type ArenaPlaylistNeighbor = {
   title: string
 }
 
+/** A YouTube block played directly as a queue entry (no Spotify track behind it). */
+export type ArenaVideoTrack = {
+  blockId: number
+  youtubeId: string
+  title: string | null
+  imageUrl: string | null
+}
+
 export type ArenaPlaylistDetail = {
   title: string
   appSlug: string
   trackIds: string[]
+  // Set on boards with no Spotify tracks: their YouTube blocks (e.g. DJ sets)
+  // become the playable queue instead of sitting in the content grid.
+  videoTracks: ArenaVideoTrack[]
   trackImages: Record<string, string | null>
   tags: string[]
   description: string | null
@@ -358,8 +369,22 @@ export const fetchPlaylistBySlug = cache(async function fetchPlaylistBySlug(
     if (trackId) trackImages[trackId] = extractContentImageUrl(block)
   }
 
+  // A board with no Spotify tracks but some YouTube links is a video board —
+  // its YouTube blocks play as the queue rather than living in the grid.
+  const isVideoBoard = trackIds.length === 0 && contents.some((block) => extractYoutubeId(block) !== null)
+  const videoTracks: ArenaVideoTrack[] = isVideoBoard
+    ? contents.flatMap((block) => {
+        const youtubeId = extractYoutubeId(block)
+        if (!youtubeId) return []
+        const rawTitle = block.generated_title ?? block.title ?? null
+        const title = rawTitle && rawTitle.trim().toLowerCase() !== "untitled" ? rawTitle : null
+        return [{ blockId: block.id, youtubeId, title, imageUrl: extractContentImageUrl(block) }]
+      })
+    : []
+
   const otherBlocks = contents
     .filter((block) => extractSpotifyTrackId(block) === null)
+    .filter((block) => !isVideoBoard || extractYoutubeId(block) === null)
     .map(toContentBlock)
     .filter((block): block is ArenaContentBlock => block !== null)
 
@@ -371,6 +396,7 @@ export const fetchPlaylistBySlug = cache(async function fetchPlaylistBySlug(
     title: match.title ?? match.slug,
     appSlug,
     trackIds,
+    videoTracks,
     trackImages,
     tags,
     description,

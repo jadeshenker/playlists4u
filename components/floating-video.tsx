@@ -1,8 +1,59 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 type Position = { left: number; top: number }
+type DockRect = { left: number; top: number; width: number }
+
+/** Where `el` sits in document coordinates, kept current as layout shifts.
+ * Document coordinates + `position: absolute` means scrolling needs no
+ * updates. A size observer on `el` alone isn't enough: dragging the sidebar
+ * can move the slot sideways without resizing it, so we also re-measure on
+ * any ancestor resize and on every change to the root element's inline
+ * style (where the sidebar writes `--sidebar-width`). */
+function useDockRect(el: HTMLElement | null): DockRect | null {
+  const [rect, setRect] = useState<DockRect | null>(null)
+
+  useLayoutEffect(() => {
+    if (!el) {
+      setRect(null)
+      return
+    }
+    function measure() {
+      if (!el) return
+      const box = el.getBoundingClientRect()
+      const next = {
+        left: box.left + window.scrollX,
+        top: box.top + window.scrollY,
+        width: box.width,
+      }
+      setRect((prev) =>
+        prev &&
+        prev.left === next.left &&
+        prev.top === next.top &&
+        prev.width === next.width
+          ? prev
+          : next
+      )
+    }
+    measure()
+
+    const resizeObserver = new ResizeObserver(measure)
+    for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+      resizeObserver.observe(node)
+    }
+    const mutationObserver = new MutationObserver(measure)
+    mutationObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] })
+    window.addEventListener("resize", measure)
+    return () => {
+      resizeObserver.disconnect()
+      mutationObserver.disconnect()
+      window.removeEventListener("resize", measure)
+    }
+  }, [el])
+
+  return rect
+}
 
 // Keep the window at least this far inside the viewport edges while dragging.
 const EDGE_MARGIN = 8
@@ -17,12 +68,16 @@ const EDGE_MARGIN = 8
  * to insert a node next to the div the IFrame API replaced with its iframe. */
 export default function FloatingVideo({
   videoRef,
-  visible,
+  visible: floatingVisible,
+  dockTarget,
   title,
   onClose,
 }: {
   videoRef: React.RefObject<HTMLDivElement | null>
   visible: boolean
+  // When set, the embed is pinned over this element (a video board's
+  // placeholder) instead of floating — docked wins over floating.
+  dockTarget: HTMLElement | null
   title: string
   onClose: () => void
 }) {
@@ -33,6 +88,9 @@ export default function FloatingVideo({
   const [position, setPosition] = useState<Position | null>(null)
   const dragRef = useRef<{ pointerX: number; pointerY: number; start: Position } | null>(null)
   const [dragging, setDragging] = useState(false)
+  const dockRect = useDockRect(dockTarget)
+  const docked = dockRect !== null
+  const visible = floatingVisible && !docked
 
   function clamp(next: Position): Position {
     const rect = windowRef.current?.getBoundingClientRect()
@@ -83,14 +141,27 @@ export default function FloatingVideo({
     setDragging(false)
   }
 
+  // Docked is a plain bordered, padded 16:9 frame (VideoStage draws the
+  // identical frame as the slot, and captions it underneath); floating adds
+  // the draggable title bar and shadow on top of that.
+  const framed = visible || docked
+
   return (
     <div
       ref={windowRef}
-      style={visible && position ? { left: position.left, top: position.top } : undefined}
+      style={
+        dockRect
+          ? { left: dockRect.left, top: dockRect.top, width: dockRect.width }
+          : visible && position
+            ? { left: position.left, top: position.top }
+            : undefined
+      }
       className={
-        visible
-          ? `fixed z-50 w-[min(360px,calc(100vw-2rem))] border border-gray-300 bg-white shadow-md ${position ? "" : "bottom-40 right-4 md:bottom-20"}`
-          : "fixed left-[-9999px] top-0"
+        docked
+          ? "absolute z-10 border border-gray-300 bg-white"
+          : visible
+            ? `fixed z-50 w-[min(360px,calc(100vw-2rem))] border border-gray-300 bg-white shadow-md ${position ? "" : "bottom-40 right-4 md:bottom-20"}`
+            : "fixed left-[-9999px] top-0"
       }
     >
       <div
@@ -112,11 +183,11 @@ export default function FloatingVideo({
           ×
         </button>
       </div>
-      <div className={visible ? "p-1.5" : undefined}>
+      <div className={framed ? "p-1.5" : undefined}>
         {/* While dragging, the iframe would swallow pointer events whenever
             the cursor passes over it, stalling the drag. */}
         <div
-          className={`${visible ? "aspect-video w-full bg-black" : "h-[113px] w-[200px]"} [&_iframe]:h-full [&_iframe]:w-full ${dragging ? "[&_iframe]:pointer-events-none" : ""}`}
+          className={`${framed ? "aspect-video w-full bg-black" : "h-[113px] w-[200px]"} [&_iframe]:h-full [&_iframe]:w-full ${dragging ? "[&_iframe]:pointer-events-none" : ""}`}
         >
           <div ref={videoRef} />
         </div>

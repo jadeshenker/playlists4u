@@ -33,6 +33,11 @@ const nextConfig: NextConfig = {
         hostname: "static.avatars.are.na",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+        pathname: "/**",
+      },
     ],
   },
   experimental: {
