@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { DM_Mono } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
 import ToastProvider from "@/components/toast-provider"
 import TrackPlayerProvider from "@/components/track-player-provider"
 import MiniPlayer from "@/components/mini-player"
@@ -31,6 +32,7 @@ export default function RootLayout({
             <MiniPlayer />
           </ToastProvider>
         </TrackPlayerProvider>
+        <Analytics />
       </body>
     </html>
   )
