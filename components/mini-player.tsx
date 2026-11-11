@@ -149,10 +149,19 @@ export default function MiniPlayer() {
               <div className="min-w-0 truncate">{songTitle}</div>
             </div>
 
-            <div ref={menuRef} className="relative hidden shrink-0 md:order-4 md:block">
+            <div ref={menuRef} className="relative shrink-0 md:order-4">
+              {/* Mobile: no keyboard, so just a small copy glyph that opens
+                  the same menu. */}
               <button
                 onClick={() => setMenuOpen((open) => !open)}
-                className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500"
+                aria-label="copy links"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-500 md:hidden"
+              >
+                ⧉
+              </button>
+              <button
+                onClick={() => setMenuOpen((open) => !open)}
+                className="hidden cursor-pointer items-center gap-1.5 font-mono text-[10px] text-gray-500 md:flex"
               >
                 <KeySequence active keys={["C"]} />
                 <span>for commands</span>
@@ -165,28 +174,34 @@ export default function MiniPlayer() {
                       if (videoId) copyLink(`https://www.youtube.com/watch?v=${videoId}`, "copied youtube link")
                     }}
                     disabled={!videoId}
-                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 max-md:py-2.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
                   >
                     <span>⧉ cpy youtube link</span>
-                    <KeySequence active keys={["Y"]} />
+                    <span className="hidden md:inline">
+                      <KeySequence active keys={["Y"]} />
+                    </span>
                   </button>
                   <button
                     onClick={() => {
                       if (spotifyUrl) copyLink(spotifyUrl, "copied spotify link")
                     }}
                     disabled={!spotifyUrl}
-                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 max-md:py-2.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
                   >
                     <span>⧉ cpy spotify link</span>
-                    <KeySequence active keys={["S"]} />
+                    <span className="hidden md:inline">
+                      <KeySequence active keys={["S"]} />
+                    </span>
                   </button>
                   <button
                     onClick={copyTrackList}
                     disabled={tracks.length === 0}
-                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 max-md:py-2.5 text-left font-mono text-[10px] text-gray-600 hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
                   >
                     <span>⧉ cpy track list</span>
-                    <KeySequence active keys={["L"]} />
+                    <span className="hidden md:inline">
+                      <KeySequence active keys={["L"]} />
+                    </span>
                   </button>
                 </div>
               )}
