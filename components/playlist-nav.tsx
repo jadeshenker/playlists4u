@@ -16,7 +16,9 @@ export default function PlaylistNav({
   if (!prev && !next) return null
 
   return (
-    <div className="flex items-center gap-3 font-mono text-[10px] text-gray-500">
+    // Stacked on mobile: side by side, two long titles are wider than the
+    // header has room for and push the whole page past the viewport.
+    <div className="flex flex-col items-end gap-1 font-mono text-[10px] text-gray-500 md:flex-row md:items-center md:gap-3">
       {prev && (
         <div
         className="tooltip tooltip-slim max-md:tooltip-left"

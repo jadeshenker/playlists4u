@@ -8,6 +8,7 @@ import KeySequence from "@/components/key-sequence"
 import { copyToClipboard } from "@/lib/clipboard"
 import { isTypingTarget } from "@/lib/dom"
 import { formatMs } from "@/lib/format"
+import type { VideoChapter } from "@/lib/youtube"
 import { PlayIcon, PauseIcon, SkipPreviousIcon, SkipNextIcon, VideoIcon } from "@/components/play-icons"
 
 // Keep in sync with the spacer height below the fixed bar — the bar's own
@@ -50,13 +51,66 @@ export default function MiniPlayer() {
   const spotifyUrl =
     currentTrack && !currentTrack.youtubeId ? `https://open.spotify.com/track/${currentTrack.id}` : null
 
-  const progressPercent = duration > 0 ? (position / duration) * 100 : 0
+  // Timestamps parsed from a video entry's (e.g. a DJ set's) YouTube
+  // description, keyed by video ID so each is only fetched once per session.
+  const [chaptersByVideo, setChaptersByVideo] = useState<Record<string, VideoChapter[]>>({})
+  // Which video's timestamp list is expanded, so switching tracks collapses it.
+  const [chaptersOpenFor, setChaptersOpenFor] = useState<string | null>(null)
+  const setVideoId = currentTrack?.youtubeId ?? null
+  const chapters = setVideoId ? (chaptersByVideo[setVideoId] ?? []) : []
+  const chaptersOpen = chapters.length > 0 && chaptersOpenFor === setVideoId
 
-  function handleSeek(event: React.MouseEvent<HTMLDivElement>) {
-    if (!currentTrack) return
+  useEffect(() => {
+    if (!setVideoId || chaptersByVideo[setVideoId]) return
+    let cancelled = false
+    fetch(`/api/youtube/chapters?videoId=${encodeURIComponent(setVideoId)}`)
+      .then((response) => (response.ok ? response.json() : { chapters: [] }))
+      .catch(() => ({ chapters: [] }))
+      .then((data: { chapters?: VideoChapter[] }) => {
+        if (cancelled) return
+        setChaptersByVideo((prev) => ({ ...prev, [setVideoId]: data.chapters ?? [] }))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [setVideoId, chaptersByVideo])
+
+  function seekToChapter(chapter: VideoChapter) {
+    if (duration <= 0) return
+    seekToFraction(Math.min((chapter.seconds * 1000) / duration, 1))
+  }
+
+  // While the user is dragging the progress bar, this holds where they'd land
+  // (0–1). The bar and timestamp preview it, and the actual seek only happens
+  // on release so we don't spam the player with seeks mid-drag.
+  const [scrubFraction, setScrubFraction] = useState<number | null>(null)
+
+  const displayPosition = scrubFraction !== null ? scrubFraction * duration : position
+  const progressPercent = duration > 0 ? (displayPosition / duration) * 100 : 0
+
+  function fractionFromPointer(event: React.PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect()
-    const fraction = (event.clientX - rect.left) / rect.width
-    seekToFraction(Math.min(Math.max(fraction, 0), 1))
+    return Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1)
+  }
+
+  function handleScrubStart(event: React.PointerEvent<HTMLDivElement>) {
+    if (!currentTrack || duration <= 0) return
+    if (event.pointerType === "mouse" && event.button !== 0) return
+    // Capture keeps move/up events coming to the bar even when the pointer
+    // strays off it mid-drag.
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setScrubFraction(fractionFromPointer(event))
+  }
+
+  function handleScrubMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (scrubFraction === null) return
+    setScrubFraction(fractionFromPointer(event))
+  }
+
+  function handleScrubEnd(event: React.PointerEvent<HTMLDivElement>) {
+    if (scrubFraction === null) return
+    seekToFraction(fractionFromPointer(event))
+    setScrubFraction(null)
   }
 
   async function copyLink(url: string, label: string) {
@@ -126,8 +180,11 @@ export default function MiniPlayer() {
     <>
       <div className={`${BAR_HEIGHT} shrink-0`} aria-hidden />
 
-      <div className={`mini-player-bar fixed bottom-0 left-0 right-0 z-50 ${BAR_HEIGHT} border-t border-gray-300 bg-white`}>
-        <div className="mx-auto flex h-full w-full max-w-3xl flex-col justify-center gap-2 px-6 py-4 md:flex-row md:items-center md:gap-4 md:py-0">
+      {/* The bar is pinned to the bottom with no fixed height of its own, so
+          when the timestamp panel below the controls expands, the whole bar
+          grows upward to reveal it. */}
+      <div className="mini-player-bar fixed bottom-0 left-0 right-0 z-50 border-t border-gray-300 bg-white">
+        <div className={`mx-auto flex ${BAR_HEIGHT} w-full max-w-3xl flex-col justify-center gap-2 px-6 py-4 md:flex-row md:items-center md:gap-4 md:py-0`}>
           {/* Mobile row 1: title + commands. At md+, this wrapper vanishes
               (display: contents) and its two children rejoin the single row
               in their original desktop order via md:order-*. */}
@@ -149,7 +206,19 @@ export default function MiniPlayer() {
               <div className="min-w-0 truncate">{songTitle}</div>
             </div>
 
-            <div ref={menuRef} className="relative shrink-0 md:order-4">
+            <div ref={menuRef} className="relative flex shrink-0 items-center gap-2 md:order-4 md:flex-col md:items-end md:gap-0.5">
+              {/* Only for sets whose description has timestamps. Mobile: inline
+                  before the copy glyph (the stacked rows have no room below).
+                  Desktop: stacked under "for commands", the pair centered in the bar. */}
+              {chapters.length > 0 && (
+                <button
+                  onClick={() => setChaptersOpenFor(chaptersOpen ? null : setVideoId)}
+                  aria-expanded={chaptersOpen}
+                  className="cursor-pointer whitespace-nowrap font-mono text-[10px] text-gray-500 md:order-last"
+                >
+                  {chaptersOpen ? "- timestamps" : "+ timestamps"}
+                </button>
+              )}
               {/* Mobile: no keyboard, so just a small copy glyph that opens
                   the same menu. */}
               <button
@@ -210,11 +279,17 @@ export default function MiniPlayer() {
 
           {/* Mobile row 2: progress + timestamps. */}
           <div className="flex min-w-0 items-center gap-3 md:order-3 md:flex-1">
-            <div onClick={handleSeek} className="h-3 flex-1 cursor-pointer bg-gray-200">
+            <div
+              onPointerDown={handleScrubStart}
+              onPointerMove={handleScrubMove}
+              onPointerUp={handleScrubEnd}
+              onPointerCancel={() => setScrubFraction(null)}
+              className="h-3 flex-1 cursor-pointer touch-none bg-gray-200"
+            >
               <div className="h-full bg-black" style={{ width: `${progressPercent}%` }} />
             </div>
             <div className="shrink-0 font-mono text-[10px] text-gray-400">
-              {formatMs(position)} / {formatMs(duration)}
+              {formatMs(displayPosition)} / {formatMs(duration)}
             </div>
           </div>
 
@@ -248,6 +323,33 @@ export default function MiniPlayer() {
             >
               <VideoIcon />
             </button>
+          </div>
+        </div>
+
+        {/* Animating grid-template-rows 0fr → 1fr transitions to the panel's
+            natural height without measuring it. */}
+        <div
+          inert={!chaptersOpen}
+          className={`grid transition-[grid-template-rows] duration-300 ease-out ${chaptersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+        >
+          <div className="overflow-hidden">
+            {/* Padding lives outside the scroll area so the list scrolls
+                edge to edge while still leaving room below it. */}
+            <div className="mx-auto w-full max-w-3xl px-6 pt-2 pb-6">
+              <div className="max-h-64 overflow-y-auto">
+                {chapters.map((chapter) => (
+                  <p key={chapter.seconds} className="truncate leading-relaxed">
+                    <button
+                      onClick={() => seekToChapter(chapter)}
+                      className="cursor-pointer font-mono text-xs text-purple-600 hover:underline"
+                    >
+                      {formatMs(chapter.seconds * 1000)}
+                    </button>{" "}
+                    {chapter.label}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
